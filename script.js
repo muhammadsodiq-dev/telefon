@@ -2,7 +2,7 @@
    DISPATCH/OS — Frontend logikasi (CALL_MANAGEMENT_SYSTEM API bilan ulangan)
    ========================================================================= */
 
-const API_BASE_URL = "";
+const API_BASE_URL = ""; // bo'sh — so'rovlar o'z domenidan (Vercel) ketadi, vercel.json orqali backendga proksilanadi
 
 const UZ_MOBILE_PREFIXES = ["90", "91", "93", "94", "95", "97", "98", "99", "33", "88", "20", "50", "55", "77"];
 
@@ -179,7 +179,7 @@ let debounceTimer = null;
 /* =============================== Login =================================== */
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  loginError.hidden = true;
+  loginError.classList.add("is-hidden");
   loginSubmit.disabled = true;
 
   const email = document.getElementById("loginEmail").value.trim();
@@ -190,13 +190,13 @@ loginForm.addEventListener("submit", async (e) => {
     accessToken = data.access_token;
     refreshToken = data.refresh_token;
 
-    loginScreen.hidden = true;
-    dashboard.hidden = false;
+    loginScreen.classList.add("is-hidden");
+    dashboard.classList.remove("is-hidden");
     await loadMyActive();
     await loadPhones(true);
   } catch (err) {
     loginError.textContent = err.message || "Login yoki parol noto'g'ri.";
-    loginError.hidden = false;
+    loginError.classList.remove("is-hidden");
   } finally {
     loginSubmit.disabled = false;
   }
@@ -208,8 +208,8 @@ function forceLogout() {
   accessToken = null;
   refreshToken = null;
   myActivePhoneId = null;
-  dashboard.hidden = true;
-  loginScreen.hidden = false;
+  dashboard.classList.add("is-hidden");
+  loginScreen.classList.remove("is-hidden");
   loginForm.reset();
 }
 
@@ -239,14 +239,14 @@ async function loadMyActive() {
     if (res && res.id) {
       myActivePhoneId = res.id;
       activeBannerPhone.textContent = formatPhoneDisplay(res.phone_number);
-      activeBanner.hidden = false;
+      activeBanner.classList.remove("is-hidden");
     } else {
       myActivePhoneId = null;
-      activeBanner.hidden = true;
+      activeBanner.classList.add("is-hidden");
     }
   } catch (_) {
     myActivePhoneId = null;
-    activeBanner.hidden = true;
+    activeBanner.classList.add("is-hidden");
   }
 }
 
@@ -276,7 +276,7 @@ async function loadPhones(reset) {
 
     renderList();
 
-    loadMoreWrap.hidden = currentPage + 1 >= totalPages;
+    loadMoreWrap.classList.toggle("is-hidden", currentPage + 1 >= totalPages);
   } catch (err) {
     console.error(err);
   }
@@ -284,7 +284,7 @@ async function loadPhones(reset) {
 
 function renderList() {
   listEl.innerHTML = "";
-  emptyState.hidden = items.length !== 0;
+  emptyState.classList.toggle("is-hidden", items.length !== 0);
 
   items.forEach((r) => {
     const meta = STATUS_META[r.status] || { label: r.status, color: "neutral" };
@@ -323,9 +323,9 @@ function escapeHtml(str) {
 /* ================================ Yangi raqam qo'shish ==================================== */
 addBtn.addEventListener("click", () => {
   createForm.reset();
-  cPhoneError.hidden = true;
+  cPhoneError.classList.add("is-hidden");
   cPhone.closest(".field").classList.remove("has-error");
-  createError.hidden = true;
+  createError.classList.add("is-hidden");
   createModal.classList.add("open");
   cPhone.focus();
 });
@@ -335,11 +335,11 @@ createModal.addEventListener("click", (e) => { if (e.target === createModal) cre
 
 createForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  createError.hidden = true;
+  createError.classList.add("is-hidden");
 
   if (!validateUzPhone(cPhone.value)) {
     cPhone.closest(".field").classList.add("has-error");
-    cPhoneError.hidden = false;
+    cPhoneError.classList.remove("is-hidden");
     cPhone.focus();
     return;
   }
@@ -357,7 +357,7 @@ createForm.addEventListener("submit", async (e) => {
     await loadPhones(true);
   } catch (err) {
     createError.textContent = err.message || "Xatolik yuz berdi.";
-    createError.hidden = false;
+    createError.classList.remove("is-hidden");
   } finally {
     submitBtn.disabled = false;
   }
@@ -365,12 +365,12 @@ createForm.addEventListener("submit", async (e) => {
 
 cPhone.addEventListener("input", () => {
   cPhone.closest(".field").classList.remove("has-error");
-  cPhoneError.hidden = true;
+  cPhoneError.classList.add("is-hidden");
 });
 
 /* ================================ Tahrirlash / holat ==================================== */
 function openEditModal(r) {
-  editError.hidden = true;
+  editError.classList.add("is-hidden");
   eId.value = r.id;
   eName.value = r.owner_name || "";
   eStatus.value = r.status;
@@ -378,8 +378,8 @@ function openEditModal(r) {
   editPhoneLabel.textContent = formatPhoneDisplay(r.phone_number);
 
   const isMine = myActivePhoneId === r.id;
-  eTakeBtn.hidden = isMine;
-  eUnlockBtn.hidden = !isMine;
+  eTakeBtn.classList.toggle("is-hidden", isMine);
+  eUnlockBtn.classList.toggle("is-hidden", !isMine);
 
   editModal.classList.add("open");
 }
@@ -399,13 +399,13 @@ eTakeBtn.addEventListener("click", async () => {
   try {
     await api.takePhone(id);
     myActivePhoneId = Number(id);
-    eTakeBtn.hidden = true;
-    eUnlockBtn.hidden = false;
+    eTakeBtn.classList.add("is-hidden");
+    eUnlockBtn.classList.remove("is-hidden");
     await loadMyActive();
     await loadPhones(true);
   } catch (err) {
     editError.textContent = err.message || "Band qilib bo'lmadi.";
-    editError.hidden = false;
+    editError.classList.remove("is-hidden");
   } finally {
     eTakeBtn.disabled = false;
   }
@@ -417,13 +417,13 @@ eUnlockBtn.addEventListener("click", async () => {
   try {
     await api.unlockPhone(id);
     myActivePhoneId = null;
-    eUnlockBtn.hidden = true;
-    eTakeBtn.hidden = false;
+    eUnlockBtn.classList.add("is-hidden");
+    eTakeBtn.classList.remove("is-hidden");
     await loadMyActive();
     await loadPhones(true);
   } catch (err) {
     editError.textContent = err.message || "Bo'shatib bo'lmadi.";
-    editError.hidden = false;
+    editError.classList.remove("is-hidden");
   } finally {
     eUnlockBtn.disabled = false;
   }
@@ -440,7 +440,7 @@ eDeleteBtn.addEventListener("click", async () => {
     await loadPhones(true);
   } catch (err) {
     editError.textContent = err.message || "O'chirib bo'lmadi.";
-    editError.hidden = false;
+    editError.classList.remove("is-hidden");
   } finally {
     eDeleteBtn.disabled = false;
   }
@@ -448,7 +448,7 @@ eDeleteBtn.addEventListener("click", async () => {
 
 editForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  editError.hidden = true;
+  editError.classList.add("is-hidden");
 
   const id = eId.value;
   const submitBtn = editForm.querySelector("button[type=submit]");
@@ -464,7 +464,7 @@ editForm.addEventListener("submit", async (e) => {
     await loadPhones(true);
   } catch (err) {
     editError.textContent = err.message || "Saqlab bo'lmadi.";
-    editError.hidden = false;
+    editError.classList.remove("is-hidden");
   } finally {
     submitBtn.disabled = false;
   }
