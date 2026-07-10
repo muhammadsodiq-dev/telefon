@@ -41,7 +41,7 @@
         <input type="password" id="loginPassword" placeholder="••••••••" required>
       </label>
 
-      <p id="loginError" class="login-error" hidden></p>
+      <p id="loginError" class="login-error is-hidden"></p>
 
       <button type="submit" id="loginSubmit" class="btn-primary btn-full">
         <span>Kirish</span>
@@ -52,7 +52,7 @@
 </section>
 
 <!-- ============ DASHBOARD ============ -->
-<section id="dashboard" class="dashboard" hidden>
+<section id="dashboard" class="dashboard is-hidden">
   <div class="app">
 
     <header class="app-header">
@@ -89,7 +89,7 @@
       <span class="total-count" id="totalCount"></span>
     </div>
 
-    <div id="activeBanner" class="active-banner" hidden>
+    <div id="activeBanner" class="active-banner is-hidden">
       <span>Sizda band qilingan raqam bor:</span>
       <strong id="activeBannerPhone"></strong>
       <button id="activeBannerGo" class="link-btn">Ko'rish</button>
@@ -97,11 +97,11 @@
 
     <main class="list" id="list"></main>
 
-    <div id="loadMoreWrap" class="load-more-wrap" hidden>
+    <div id="loadMoreWrap" class="load-more-wrap is-hidden">
       <button id="loadMoreBtn" class="btn-ghost">Yana yuklash</button>
     </div>
 
-    <div id="emptyState" class="empty-state" hidden>
+    <div id="emptyState" class="empty-state is-hidden">
       <p>Hech qanday raqam topilmadi.</p>
       <p class="empty-sub">Pastdagi "+" tugmasi bilan yangi raqam qo'shing.</p>
     </div>
@@ -128,7 +128,7 @@
           <span class="phone-prefix">+998</span>
           <input type="text" id="cPhone" placeholder="90 123 45 67" inputmode="numeric" required>
         </div>
-        <span class="field-error" id="cPhoneError" hidden>Bu O'zbekiston mobil raqami formatiga mos emas.</span>
+        <span class="field-error is-hidden" id="cPhoneError">Bu O'zbekiston mobil raqami formatiga mos emas.</span>
       </label>
 
       <label class="field">
@@ -136,7 +136,7 @@
         <input type="text" id="cName" placeholder="Egasining ismi">
       </label>
 
-      <p id="createError" class="login-error" hidden></p>
+      <p id="createError" class="login-error is-hidden"></p>
 
       <button type="submit" class="btn-primary btn-full">Qo'shish</button>
     </form>
@@ -182,11 +182,11 @@
         <textarea id="eDescription" rows="3" placeholder="Qo'ng'iroq haqida qisqacha izoh..."></textarea>
       </label>
 
-      <p id="editError" class="login-error" hidden></p>
+      <p id="editError" class="login-error is-hidden"></p>
 
       <div class="modal-actions">
         <button type="button" id="eTakeBtn" class="btn-secondary">Band qilish</button>
-        <button type="button" id="eUnlockBtn" class="btn-secondary" hidden>Bo'shatish</button>
+        <button type="button" id="eUnlockBtn" class="btn-secondary is-hidden">Bo'shatish</button>
         <button type="button" id="eDeleteBtn" class="btn-danger">O'chirish</button>
       </div>
 
