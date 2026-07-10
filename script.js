@@ -279,8 +279,8 @@ document.getElementById("verifyForm").addEventListener("submit", async (e) => {
   const verifyError = document.getElementById("verifyError");
   verifyError.classList.add("is-hidden");
   const code = otpInputs.map((i) => i.value).join("");
-  if (code.length !== 6) {
-    verifyError.textContent = "6 xonali kodni to'liq kiriting.";
+  if (code.length !== 4) {
+    verifyError.textContent = "4 xonali kodni to'liq kiriting.";
     verifyError.classList.remove("is-hidden");
     return;
   }
