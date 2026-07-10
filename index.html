@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Raqamlar — Qo'ng'iroqlar nazorati</title>
+<title>Call Management System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -11,186 +11,483 @@
 </head>
 <body>
 
-<!-- ============ LOGIN ============ -->
-<section id="loginScreen" class="login-screen">
-  <div class="sweep-field">
-    <div class="sweep-line"></div>
-    <div class="grid-dots"></div>
-  </div>
+<!-- ======================================================================
+     AUTH: LOGIN / REGISTER / VERIFY / FORGOT
+     ====================================================================== -->
+<section id="authScreen" class="auth-screen">
+  <div class="sweep-field"><div class="sweep-line"></div><div class="grid-dots"></div></div>
 
-  <div class="login-card">
+  <div class="auth-card">
     <div class="brand">
       <span class="brand-mark">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M6.5 3C5 3 4 4 4 5.5C4 14.5 9.5 20 18.5 20C20 20 21 19 21 17.5V15.2C21 14.4 20.4 13.7 19.6 13.6L15.9 13C15.3 12.9 14.7 13.1 14.3 13.6L13 15C10.7 13.8 8.9 12 7.7 9.7L9.1 8.4C9.6 8 9.8 7.4 9.7 6.8L9.1 3.9C8.9 3.1 8.2 2.5 7.4 2.5H6.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-        </svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6.5 3C5 3 4 4 4 5.5C4 14.5 9.5 20 18.5 20C20 20 21 19 21 17.5V15.2C21 14.4 20.4 13.7 19.6 13.6L15.9 13C15.3 12.9 14.7 13.1 14.3 13.6L13 15C10.7 13.8 8.9 12 7.7 9.7L9.1 8.4C9.6 8 9.8 7.4 9.7 6.8L9.1 3.9C8.9 3.1 8.2 2.5 7.4 2.5H6.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
       </span>
-      <span class="brand-name">DISPATCH<span class="brand-accent">/OS</span></span>
+      <span class="brand-name">CALL<span class="brand-accent">/MS</span></span>
     </div>
 
-    <h1 class="login-title">Tizimga kirish</h1>
-    <p class="login-sub">Qo'ng'iroqlar nazorati paneliga xush kelibsiz</p>
+    <!-- ---------- LOGIN VIEW ---------- -->
+    <div id="loginView" class="auth-view">
+      <h1 class="auth-title">Xush kelibsiz</h1>
+      <p class="auth-sub">Tizimga kirish uchun ma'lumotlaringizni kiriting</p>
 
-    <form id="loginForm" autocomplete="off">
-      <label class="field">
-        <span class="field-label">Elektron pochta</span>
-        <input type="email" id="loginEmail" placeholder="ism@pochta.com" required>
-      </label>
-      <label class="field">
-        <span class="field-label">Parol</span>
-        <input type="password" id="loginPassword" placeholder="••••••••" required>
-      </label>
-
-      <p id="loginError" class="login-error is-hidden"></p>
-
-      <button type="submit" id="loginSubmit" class="btn-primary btn-full">
-        <span>Kirish</span>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-    </form>
-  </div>
-</section>
-
-<!-- ============ DASHBOARD ============ -->
-<section id="dashboard" class="dashboard is-hidden">
-  <div class="app">
-
-    <header class="app-header">
-      <h1 class="app-title">Raqamlar</h1>
-      <div class="header-actions">
-        <button id="searchToggle" class="icon-btn-lg" title="Qidirish">
-          <svg width="19" height="19" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M14 14L18 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <form id="loginForm" autocomplete="off">
+        <label class="field">
+          <span class="field-label">Elektron pochta</span>
+          <input type="email" id="loginEmail" placeholder="ism@pochta.com" required>
+        </label>
+        <label class="field">
+          <span class="field-label">Parol</span>
+          <input type="password" id="loginPassword" placeholder="••••••••" required>
+        </label>
+        <p id="loginError" class="auth-error is-hidden"></p>
+        <button type="submit" id="loginSubmit" class="btn-primary btn-full">
+          <span>Kirish</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <button id="logoutBtn" class="icon-btn-lg" title="Chiqish">
-          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M13 13.5L17 10L13 6.5M17 10H7.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
+      </form>
+
+      <div class="auth-links">
+        <button class="link-btn" data-goto="forgotView">Parolni unutdingizmi?</button>
+        <span class="auth-links-sep">•</span>
+        <span>Akkountingiz yo'qmi? <button class="link-btn" data-goto="registerView">Ro'yxatdan o'tish</button></span>
       </div>
-    </header>
-
-    <div id="searchBar" class="search-bar">
-      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M14 14L18 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      <input type="text" id="searchInput" placeholder="Telefon raqami yoki ism bo'yicha qidirish" autocomplete="off">
     </div>
 
-    <div class="filter-row">
-      <select id="statusFilter">
-        <option value="">Barcha holatlar</option>
-        <option value="NEW">Yangi</option>
-        <option value="IN_PROGRESS">Jarayonda</option>
-        <option value="CONNECTED">Bog'landi</option>
-        <option value="NO_ANSWER">Ko'tarilmadi</option>
-        <option value="BUSY">Band (liniya)</option>
-        <option value="CALLBACK_REQUIRED">Qayta aloqa kerak</option>
-        <option value="WRONG_NUMBER">Noto'g'ri raqam</option>
-        <option value="NOT_INTERESTED">Qiziqmadi</option>
-        <option value="BLACKLISTED">Qora ro'yxatda</option>
-        <option value="FINISHED">Yakunlangan</option>
-      </select>
-      <span class="total-count" id="totalCount"></span>
+    <!-- ---------- REGISTER VIEW ---------- -->
+    <div id="registerView" class="auth-view is-hidden">
+      <button class="back-btn" data-goto="loginView">&larr;</button>
+      <h1 class="auth-title">Akkount yaratish</h1>
+      <p class="auth-sub">Ro'yxatdan o'tish uchun ma'lumotlaringizni kiriting</p>
+
+      <form id="registerForm" autocomplete="off">
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">Ism</span>
+            <input type="text" id="regFirstName" placeholder="Ali" required>
+          </label>
+          <label class="field">
+            <span class="field-label">Familiya</span>
+            <input type="text" id="regLastName" placeholder="Valiyev" required>
+          </label>
+        </div>
+        <label class="field">
+          <span class="field-label">Elektron pochta</span>
+          <input type="email" id="regEmail" placeholder="ism@pochta.com" required>
+        </label>
+        <label class="field">
+          <span class="field-label">Parol</span>
+          <div class="password-wrap">
+            <input type="password" id="regPassword" placeholder="••••••••" required minlength="6">
+            <button type="button" class="pw-toggle" data-target="regPassword">👁</button>
+          </div>
+        </label>
+        <p id="registerError" class="auth-error is-hidden"></p>
+        <button type="submit" id="registerSubmit" class="btn-primary btn-full">Ro'yxatdan o'tish</button>
+      </form>
+
+      <div class="auth-links">
+        <span>Akkountingiz bormi? <button class="link-btn" data-goto="loginView">Kirish</button></span>
+      </div>
     </div>
 
-    <div id="activeBanner" class="active-banner is-hidden">
-      <span>Sizda band qilingan raqam bor:</span>
-      <strong id="activeBannerPhone"></strong>
-      <button id="activeBannerGo" class="link-btn">Ko'rish</button>
+    <!-- ---------- VERIFY VIEW ---------- -->
+    <div id="verifyView" class="auth-view is-hidden">
+      <button class="back-btn" data-goto="registerView">&larr;</button>
+      <h1 class="auth-title">Emailni tasdiqlang</h1>
+      <p class="auth-sub">6 xonali kod <strong id="verifyEmailLabel"></strong> manziliga yuborildi</p>
+
+      <form id="verifyForm" autocomplete="off">
+        <div class="otp-row">
+          <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" data-i="0">
+          <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" data-i="1">
+          <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" data-i="2">
+          <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" data-i="3">
+          <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" data-i="4">
+          <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" data-i="5">
+        </div>
+        <p id="verifyError" class="auth-error is-hidden"></p>
+        <button type="submit" id="verifySubmit" class="btn-primary btn-full">Tasdiqlash</button>
+      </form>
+      <div class="auth-links">
+        <span id="verifyTimer">00:59</span>
+        <span class="auth-links-sep">•</span>
+        <button class="link-btn" id="resendCodeBtn" disabled>Qayta yuborish</button>
+      </div>
     </div>
 
-    <main class="list" id="list"></main>
-
-    <div id="loadMoreWrap" class="load-more-wrap is-hidden">
-      <button id="loadMoreBtn" class="btn-ghost">Yana yuklash</button>
+    <!-- ---------- VERIFICATION SUCCESS ---------- -->
+    <div id="verifiedView" class="auth-view is-hidden">
+      <div class="success-tick">✓</div>
+      <h1 class="auth-title" style="text-align:center">Email tasdiqlandi!</h1>
+      <p class="auth-sub" style="text-align:center">Akkountingiz muvaffaqiyatli tasdiqlandi.</p>
+      <button class="btn-primary btn-full" data-goto="loginView">Kirish sahifasiga o'tish</button>
     </div>
 
-    <div id="emptyState" class="empty-state is-hidden">
-      <p>Hech qanday raqam topilmadi.</p>
-      <p class="empty-sub">Pastdagi "+" tugmasi bilan yangi raqam qo'shing.</p>
+    <!-- ---------- FORGOT PASSWORD VIEW ---------- -->
+    <div id="forgotView" class="auth-view is-hidden">
+      <button class="back-btn" data-goto="loginView">&larr;</button>
+      <h1 class="auth-title">Parolni tiklash</h1>
+      <p class="auth-sub">Ismingiz va emailingizni kiriting, tasdiqlash kodi yuboriladi</p>
+
+      <form id="forgotForm" autocomplete="off">
+        <label class="field">
+          <span class="field-label">Ism</span>
+          <input type="text" id="forgotFirstName" placeholder="Ali" required>
+        </label>
+        <label class="field">
+          <span class="field-label">Elektron pochta</span>
+          <input type="email" id="forgotEmail" placeholder="ism@pochta.com" required>
+        </label>
+        <p id="forgotError" class="auth-error is-hidden"></p>
+        <button type="submit" class="btn-primary btn-full">Kod yuborish</button>
+      </form>
     </div>
 
-    <button id="addBtn" class="fab" title="Yangi raqam qo'shish">
-      <svg width="22" height="22" viewBox="0 0 16 16" fill="none"><path d="M8 3V13M3 8H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    </button>
+    <!-- ---------- RESET PASSWORD (OTP) VIEW ---------- -->
+    <div id="resetView" class="auth-view is-hidden">
+      <button class="back-btn" data-goto="forgotView">&larr;</button>
+      <h1 class="auth-title">Yangi parol</h1>
+      <p class="auth-sub">Kod va yangi parolni kiriting</p>
 
+      <form id="resetForm" autocomplete="off">
+        <label class="field">
+          <span class="field-label">Tasdiqlash kodi</span>
+          <input type="text" id="resetCode" placeholder="123456" required>
+        </label>
+        <label class="field">
+          <span class="field-label">Yangi parol</span>
+          <input type="password" id="resetNewPassword" placeholder="••••••••" required minlength="6">
+        </label>
+        <p id="resetError" class="auth-error is-hidden"></p>
+        <button type="submit" class="btn-primary btn-full">Parolni yangilash</button>
+      </form>
+    </div>
   </div>
 </section>
 
-<!-- ============ MODAL: YANGI RAQAM ============ -->
-<div id="createModal" class="modal-overlay">
-  <div class="modal">
-    <div class="modal-head">
-      <h3>Yangi raqam qo'shish</h3>
-      <button class="icon-btn js-close-create">&times;</button>
+<!-- ======================================================================
+     OPERATOR APP
+     ====================================================================== -->
+<section id="operatorApp" class="app-shell is-hidden">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6.5 3C5 3 4 4 4 5.5C4 14.5 9.5 20 18.5 20C20 20 21 19 21 17.5V15.2C21 14.4 20.4 13.7 19.6 13.6L15.9 13C15.3 12.9 14.7 13.1 14.3 13.6L13 15C10.7 13.8 8.9 12 7.7 9.7L9.1 8.4C9.6 8 9.8 7.4 9.7 6.8L9.1 3.9C8.9 3.1 8.2 2.5 7.4 2.5H6.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
+      <span>Call Management</span>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="opDashboard">📋 Dashboard</button>
+      <button class="nav-item" data-view="opActive">📞 My Active Phone</button>
+      <button class="nav-item" data-view="opHistory">🕓 Call History</button>
+      <button class="nav-item" data-view="opProfile">👤 My Profile</button>
+      <button class="nav-item" data-view="opPassword">🔒 Reset Password</button>
+      <button class="nav-item nav-logout" id="opLogoutBtn">↩ Logout</button>
+    </nav>
+  </aside>
+
+  <main class="main-area">
+    <!-- ---------- OPERATOR DASHBOARD (phone list) ---------- -->
+    <div id="opDashboardView" class="op-view">
+      <div class="topbar">
+        <div class="search-wrap">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M14 14L18 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <input type="text" id="opSearchInput" placeholder="Search phone number...">
+        </div>
+        <select id="opStatusFilter" class="select-compact">
+          <option value="">Barcha holatlar</option>
+          <option value="NEW">NEW</option>
+          <option value="IN_PROGRESS">IN_PROGRESS</option>
+          <option value="CONNECTED">CONNECTED</option>
+          <option value="NO_ANSWER">NO_ANSWER</option>
+          <option value="BUSY">BUSY</option>
+          <option value="CALLBACK_REQUIRED">CALLBACK_REQUIRED</option>
+          <option value="WRONG_NUMBER">WRONG_NUMBER</option>
+          <option value="NOT_INTERESTED">NOT_INTERESTED</option>
+          <option value="BLACKLISTED">BLACKLISTED</option>
+          <option value="FINISHED">FINISHED</option>
+        </select>
+        <div class="user-chip">
+          <span class="user-avatar" id="opAvatar">A</span>
+          <div>
+            <div id="opUserName" class="user-chip-name"></div>
+            <div class="user-chip-role">Operator</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="opActiveBanner" class="active-banner is-hidden">
+        <span class="live-dot"></span>
+        <span>This phone is currently being used by <strong id="opActiveBannerName"></strong></span>
+        <span class="live-badge">LIVE</span>
+      </div>
+
+      <div class="panel table-panel">
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>#</th><th>Phone Number</th><th>Owner Name</th><th>Status</th><th>Created</th><th></th>
+            </tr></thead>
+            <tbody id="opTableBody"></tbody>
+          </table>
+        </div>
+        <div id="opEmptyState" class="empty-state is-hidden"><p>Raqamlar topilmadi.</p></div>
+        <div class="pager" id="opPager"></div>
+      </div>
     </div>
 
-    <form id="createForm">
-      <label class="field">
-        <span class="field-label">Telefon raqami</span>
-        <div class="phone-input-wrap">
-          <span class="phone-prefix">+998</span>
-          <input type="text" id="cPhone" placeholder="90 123 45 67" inputmode="numeric" required>
+    <!-- ---------- MY ACTIVE PHONE ---------- -->
+    <div id="opActiveView" class="op-view is-hidden">
+      <h2 class="view-title">My Active Phone</h2>
+      <div id="opActiveCard" class="panel active-phone-card">
+        <p class="muted">Yuklanmoqda...</p>
+      </div>
+    </div>
+
+    <!-- ---------- CALL HISTORY (operator) ---------- -->
+    <div id="opHistoryView" class="op-view is-hidden">
+      <h2 class="view-title">Call History</h2>
+      <div class="panel table-panel">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>#</th><th>Date &amp; Time</th><th>Phone</th><th>Status</th><th>Duration</th><th>Description</th></tr></thead>
+            <tbody id="opHistoryBody"></tbody>
+          </table>
         </div>
-        <span class="field-error is-hidden" id="cPhoneError">Bu O'zbekiston mobil raqami formatiga mos emas.</span>
+        <div id="opHistoryEmpty" class="empty-state is-hidden"><p>Tarix bo'sh.</p></div>
+      </div>
+    </div>
+
+    <!-- ---------- MY PROFILE ---------- -->
+    <div id="opProfileView" class="op-view is-hidden">
+      <h2 class="view-title">My Profile</h2>
+      <div class="panel profile-panel">
+        <div class="profile-head">
+          <span class="user-avatar big" id="opProfileAvatar">A</span>
+          <div>
+            <div class="profile-name" id="opProfileName"></div>
+            <div class="profile-email" id="opProfileEmail"></div>
+          </div>
+        </div>
+        <form id="opProfileForm">
+          <div class="field-row">
+            <label class="field"><span class="field-label">Ism</span><input type="text" id="opProfileFirstName" required></label>
+            <label class="field"><span class="field-label">Familiya</span><input type="text" id="opProfileLastName" required></label>
+          </div>
+          <label class="field"><span class="field-label">Email</span><input type="email" id="opProfileEmailInput" required></label>
+          <p id="opProfileError" class="auth-error is-hidden"></p>
+          <p id="opProfileSuccess" class="auth-success is-hidden">Saqlandi!</p>
+          <button type="submit" class="btn-primary">Saqlash</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ---------- RESET PASSWORD (operator, in-app) ---------- -->
+    <div id="opPasswordView" class="op-view is-hidden">
+      <h2 class="view-title">Reset Password</h2>
+      <div class="panel profile-panel">
+        <p class="muted" style="margin-bottom:16px;">Parolni yangilash uchun "Parolni unutdingizmi" jarayonidan foydalaning — bu email orqali kod yuboradi.</p>
+        <button class="btn-secondary" id="opGoForgotBtn">Parolni tiklash jarayonini boshlash</button>
+      </div>
+    </div>
+  </main>
+</section>
+
+<!-- ======================================================================
+     ADMIN APP
+     ====================================================================== -->
+<section id="adminApp" class="app-shell is-hidden">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6.5 3C5 3 4 4 4 5.5C4 14.5 9.5 20 18.5 20C20 20 21 19 21 17.5V15.2C21 14.4 20.4 13.7 19.6 13.6L15.9 13C15.3 12.9 14.7 13.1 14.3 13.6L13 15C10.7 13.8 8.9 12 7.7 9.7L9.1 8.4C9.6 8 9.8 7.4 9.7 6.8L9.1 3.9C8.9 3.1 8.2 2.5 7.4 2.5H6.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
+      <span>Call Management</span>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="adDashboard">📊 Dashboard</button>
+      <button class="nav-item" data-view="adPhones">📱 Phones</button>
+      <button class="nav-item" data-view="adUsers">👥 Users</button>
+      <button class="nav-item" data-view="adHistory">🕓 Call History</button>
+      <button class="nav-item" data-view="adUnlock">🔓 Unlock Phone</button>
+      <button class="nav-item" data-view="adImport">📥 Import Phones</button>
+      <button class="nav-item nav-logout" id="adLogoutBtn">↩ Logout</button>
+    </nav>
+  </aside>
+
+  <main class="main-area">
+    <!-- ---------- ADMIN DASHBOARD ---------- -->
+    <div id="adDashboardView" class="op-view">
+      <h2 class="view-title">Admin Dashboard</h2>
+
+      <div class="stat-grid" id="adStatGrid"></div>
+
+      <div class="chart-row">
+        <div class="panel chart-panel">
+          <h3>Phone Statistics</h3>
+          <div class="donut-wrap" id="adPhoneDonut"></div>
+          <div class="legend" id="adPhoneLegend"></div>
+        </div>
+        <div class="panel chart-panel">
+          <h3>Call History Statistics</h3>
+          <div class="donut-wrap" id="adCallDonut"></div>
+          <div class="legend" id="adCallLegend"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- ADMIN: PHONES MANAGEMENT ---------- -->
+    <div id="adPhonesView" class="op-view is-hidden">
+      <div class="topbar">
+        <div class="search-wrap">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M14 14L18 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <input type="text" id="adPhoneSearch" placeholder="Search phone...">
+        </div>
+        <button class="btn-primary" id="adAddPhoneBtn">+ Add Phone</button>
+      </div>
+      <div class="panel table-panel">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>#</th><th>Phone Number</th><th>Owner Name</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+            <tbody id="adPhonesBody"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="adPhonesPager"></div>
+      </div>
+    </div>
+
+    <!-- ---------- ADMIN: USERS MANAGEMENT ---------- -->
+    <div id="adUsersView" class="op-view is-hidden">
+      <div class="topbar">
+        <div class="search-wrap">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M14 14L18 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <input type="text" id="adUserSearch" placeholder="Search user...">
+        </div>
+        <span class="muted small">Foydalanuvchilar faqat ro'yxatdan o'tish orqali qo'shiladi</span>
+      </div>
+      <div class="panel table-panel">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>#</th><th>Full Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="adUsersBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- ADMIN: CALL HISTORY ---------- -->
+    <div id="adHistoryView" class="op-view is-hidden">
+      <div class="panel filters-panel">
+        <div class="filters-row">
+          <label class="field-inline"><span>From</span><input type="date" id="adHistFrom"></label>
+          <label class="field-inline"><span>To</span><input type="date" id="adHistTo"></label>
+          <label class="field-inline"><span>Status</span>
+            <select id="adHistStatus"><option value="">All</option>
+              <option value="NEW">NEW</option><option value="IN_PROGRESS">IN_PROGRESS</option><option value="CONNECTED">CONNECTED</option>
+              <option value="NO_ANSWER">NO_ANSWER</option><option value="BUSY">BUSY</option><option value="CALLBACK_REQUIRED">CALLBACK_REQUIRED</option>
+              <option value="WRONG_NUMBER">WRONG_NUMBER</option><option value="NOT_INTERESTED">NOT_INTERESTED</option>
+              <option value="BLACKLISTED">BLACKLISTED</option><option value="FINISHED">FINISHED</option>
+            </select>
+          </label>
+          <button class="btn-secondary" id="adHistApplyBtn">Filter</button>
+          <button class="btn-ghost" id="adHistResetBtn">Reset</button>
+        </div>
+        <div class="filters-row">
+          <label class="field-inline"><span>Delete history up to</span><input type="date" id="adDeleteUpTo"></label>
+          <button class="btn-danger" id="adDeleteHistBtn">Delete Up To Date</button>
+          <span class="muted small">Bu amal qaytarib bo'lmaydi</span>
+        </div>
+      </div>
+      <div class="panel table-panel">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>#</th><th>Date &amp; Time</th><th>Phone</th><th>Dispatcher</th><th>Status</th><th>Duration</th><th>Description</th></tr></thead>
+            <tbody id="adHistoryBody"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="adHistoryPager"></div>
+      </div>
+    </div>
+
+    <!-- ---------- ADMIN: UNLOCK PHONE ---------- -->
+    <div id="adUnlockView" class="op-view is-hidden">
+      <h2 class="view-title">Unlock Phone</h2>
+      <div class="panel" style="max-width:480px;">
+        <p class="muted" style="margin-bottom:14px;">Band qilingan raqamni ID orqali bo'shatish</p>
+        <label class="field"><span class="field-label">Phone ID</span><input type="text" id="adUnlockId" placeholder="Masalan: 4"></label>
+        <p id="adUnlockError" class="auth-error is-hidden"></p>
+        <p id="adUnlockSuccess" class="auth-success is-hidden">Bo'shatildi!</p>
+        <button class="btn-primary" id="adUnlockBtn">Unlock</button>
+      </div>
+    </div>
+
+    <!-- ---------- ADMIN: IMPORT PHONES ---------- -->
+    <div id="adImportView" class="op-view is-hidden">
+      <h2 class="view-title">Import Phones</h2>
+      <div class="panel" style="max-width:480px;">
+        <p class="muted" style="margin-bottom:14px;">⚠️ Hozircha bitta-bittalab qo'shish qo'llab-quvvatlanadi (backendda ommaviy import endpointi yo'q).</p>
+        <label class="field"><span class="field-label">Telefon raqami</span>
+          <div class="phone-input-wrap"><span class="phone-prefix">+998</span><input type="text" id="adImportPhone" placeholder="90 123 45 67"></div>
+        </label>
+        <label class="field"><span class="field-label">Ism (ixtiyoriy)</span><input type="text" id="adImportName"></label>
+        <p id="adImportError" class="auth-error is-hidden"></p>
+        <p id="adImportSuccess" class="auth-success is-hidden">Qo'shildi!</p>
+        <button class="btn-primary" id="adImportBtn">Qo'shish</button>
+      </div>
+    </div>
+  </main>
+</section>
+
+<!-- ======================================================================
+     UMUMIY MODALLAR
+     ====================================================================== -->
+
+<!-- Phone Details modal -->
+<div id="detailsModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Phone Details</h3><button class="icon-btn js-close" data-modal="detailsModal">&times;</button></div>
+    <div id="detailsBody" class="details-body"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="detailsCloseBtn">Close</button>
+      <button class="btn-primary" id="detailsTakeBtn">Take</button>
+    </div>
+  </div>
+</div>
+
+<!-- Take & Update modal -->
+<div id="updateModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Take &amp; Update Phone</h3><button class="icon-btn js-close" data-modal="updateModal">&times;</button></div>
+    <div class="modal-phone-label" id="updatePhoneLabel"></div>
+    <form id="updateForm">
+      <input type="hidden" id="uId">
+      <label class="field"><span class="field-label">Status *</span>
+        <select id="uStatus" required>
+          <option value="NEW">NEW</option><option value="IN_PROGRESS">IN_PROGRESS</option><option value="CONNECTED">CONNECTED</option>
+          <option value="NO_ANSWER">NO_ANSWER</option><option value="BUSY">BUSY</option><option value="CALLBACK_REQUIRED">CALLBACK_REQUIRED</option>
+          <option value="WRONG_NUMBER">WRONG_NUMBER</option><option value="NOT_INTERESTED">NOT_INTERESTED</option>
+          <option value="BLACKLISTED">BLACKLISTED</option><option value="FINISHED">FINISHED</option>
+        </select>
       </label>
-
-      <label class="field">
-        <span class="field-label">Ism-familiya (ixtiyoriy)</span>
-        <input type="text" id="cName" placeholder="Egasining ismi">
-      </label>
-
-      <p id="createError" class="login-error is-hidden"></p>
-
-      <button type="submit" class="btn-primary btn-full">Qo'shish</button>
+      <label class="field"><span class="field-label">Description (Call History) *</span><textarea id="uDescription" rows="3" required></textarea></label>
+      <p id="updateError" class="auth-error is-hidden"></p>
+      <button type="submit" class="btn-primary btn-full">Save</button>
     </form>
   </div>
 </div>
 
-<!-- ============ MODAL: HOLAT / TAHRIRLASH ============ -->
-<div id="editModal" class="modal-overlay">
+<!-- Add/Edit Phone modal (admin) -->
+<div id="phoneFormModal" class="modal-overlay">
   <div class="modal">
-    <div class="modal-head">
-      <h3>Qo'ng'iroq natijasini belgilash</h3>
-      <button class="icon-btn js-close-edit">&times;</button>
-    </div>
-
-    <div class="modal-phone-label" id="editPhoneLabel"></div>
-
-    <form id="editForm">
-      <input type="hidden" id="eId">
-
-      <label class="field">
-        <span class="field-label">Ism-familiya</span>
-        <input type="text" id="eName" placeholder="Egasining ismi">
+    <div class="modal-head"><h3 id="phoneFormTitle">Add Phone</h3><button class="icon-btn js-close" data-modal="phoneFormModal">&times;</button></div>
+    <form id="phoneFormForm">
+      <input type="hidden" id="pfId">
+      <label class="field"><span class="field-label">Telefon raqami</span>
+        <div class="phone-input-wrap"><span class="phone-prefix">+998</span><input type="text" id="pfPhone" placeholder="90 123 45 67"></div>
+        <span class="field-error is-hidden" id="pfPhoneError">Noto'g'ri format.</span>
       </label>
-
-      <label class="field">
-        <span class="field-label">Holat</span>
-        <select id="eStatus" required>
-          <option value="NEW">Yangi</option>
-          <option value="IN_PROGRESS">Jarayonda</option>
-          <option value="CONNECTED">Bog'landi</option>
-          <option value="NO_ANSWER">Ko'tarilmadi</option>
-          <option value="BUSY">Band (liniya)</option>
-          <option value="CALLBACK_REQUIRED">Qayta aloqa kerak</option>
-          <option value="WRONG_NUMBER">Noto'g'ri raqam</option>
-          <option value="NOT_INTERESTED">Qiziqmadi</option>
-          <option value="BLACKLISTED">Qora ro'yxatda</option>
-          <option value="FINISHED">Yakunlangan</option>
-        </select>
-      </label>
-
-      <label class="field">
-        <span class="field-label">Izoh (ixtiyoriy)</span>
-        <textarea id="eDescription" rows="3" placeholder="Qo'ng'iroq haqida qisqacha izoh..."></textarea>
-      </label>
-
-      <p id="editError" class="login-error is-hidden"></p>
-
+      <label class="field"><span class="field-label">Ism (ixtiyoriy)</span><input type="text" id="pfName"></label>
+      <p id="phoneFormError" class="auth-error is-hidden"></p>
       <div class="modal-actions">
-        <button type="button" id="eTakeBtn" class="btn-secondary">Band qilish</button>
-        <button type="button" id="eUnlockBtn" class="btn-secondary is-hidden">Bo'shatish</button>
-        <button type="button" id="eDeleteBtn" class="btn-danger">O'chirish</button>
+        <button type="button" class="btn-danger is-hidden" id="pfDeleteBtn">O'chirish</button>
+        <button type="submit" class="btn-primary">Saqlash</button>
       </div>
-
-      <button type="submit" class="btn-primary btn-full">Saqlash</button>
     </form>
   </div>
 </div>
