@@ -2,7 +2,7 @@
    DISPATCH/OS — Frontend logikasi (CALL_MANAGEMENT_SYSTEM API bilan ulangan)
    ========================================================================= */
 
-const API_BASE_URL = "http://178.104.182.81:8082";
+const API_BASE_URL = "";
 
 const UZ_MOBILE_PREFIXES = ["90", "91", "93", "94", "95", "97", "98", "99", "33", "88", "20", "50", "55", "77"];
 
