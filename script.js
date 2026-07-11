@@ -3,7 +3,7 @@
    ========================================================================= */
 
 const API_BASE_URL = ""; // Vercel serverless proksi orqali (/api/[...path].js)
-const WS_URL = "http://178.104.182.81:8082/ws"; // <-- backend WebSocket manzilini shu yerga yozing, masalan: "wss://178.104.182.81:8082/ws"
+const WS_URL = ""; // <-- backend WebSocket manzilini shu yerga yozing, masalan: "wss://178.104.182.81:8082/ws"
 
 let ws = null;
 let phoneLockMap = {}; // phoneId -> {locked, operatorId, operatorName}
@@ -185,7 +185,29 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-/* ---------- Toast bildirishnoma (alert() o'rniga) ---------- */
+/* ---------- Custom tasdiqlash oynasi (confirm() o'rniga) ---------- */
+function showConfirm(message, title = "Tasdiqlang") {
+  return new Promise((resolve) => {
+    document.getElementById("confirmTitle").textContent = title;
+    document.getElementById("confirmMessage").textContent = message;
+    openModal("confirmModal");
+
+    const okBtn = document.getElementById("confirmOkBtn");
+    const cancelBtn = document.getElementById("confirmCancelBtn");
+
+    const cleanup = (result) => {
+      okBtn.removeEventListener("click", onOk);
+      cancelBtn.removeEventListener("click", onCancel);
+      closeModal("confirmModal");
+      resolve(result);
+    };
+    const onOk = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+
+    okBtn.addEventListener("click", onOk);
+    cancelBtn.addEventListener("click", onCancel);
+  });
+}
 let toastContainer = null;
 function showToast(message, type = "danger") {
   if (!toastContainer) {
@@ -544,10 +566,10 @@ let detailsCurrentPhone = null;
 function openDetails(phone) {
   detailsCurrentPhone = phone;
   document.getElementById("detailsBody").innerHTML = `
-    <div class="details-row"><span class="dr-label">Phone Number</span><span class="dr-value">${formatPhoneDisplay(phone.phone_number)}</span></div>
-    <div class="details-row"><span class="dr-label">Owner Name</span><span class="dr-value">${escapeHtml(phone.owner_name || "-")}</span></div>
-    <div class="details-row"><span class="dr-label">Status</span><span class="dr-value">${badgeHtml(phone.status)}</span></div>
-    <div class="details-row"><span class="dr-label">Created At</span><span class="dr-value">${fmtDate(phone.created_at)}</span></div>
+    <div class="details-row"><span class="dr-label">Telefon raqami</span><span class="dr-value">${formatPhoneDisplay(phone.phone_number)}</span></div>
+    <div class="details-row"><span class="dr-label">Ism-familiya</span><span class="dr-value">${escapeHtml(phone.owner_name || "-")}</span></div>
+    <div class="details-row"><span class="dr-label">Holat</span><span class="dr-value">${badgeHtml(phone.status)}</span></div>
+    <div class="details-row"><span class="dr-label">Qo'shilgan sana</span><span class="dr-value">${fmtDate(phone.created_at)}</span></div>
   `;
   openModal("detailsModal");
 }
@@ -558,6 +580,23 @@ document.getElementById("detailsTakeBtn").addEventListener("click", () => {
 });
 
 async function doTake(id, phone) {
+  // Avval mavjud faol raqamni tekshiramiz — backend xatoligini oldini olish uchun
+  try {
+    const active = await api.myActive();
+    if (active && active.id && Number(active.id) !== Number(id)) {
+      showToast(`Sizda hali faol raqam bor (${formatPhoneDisplay(active.phone_number)}). Avval uni yangilang yoki bo'shating.`);
+      return;
+    }
+    if (active && active.id && Number(active.id) === Number(id)) {
+      // Bu raqam allaqachon siz tomondan band qilingan — qayta "take" yubormasdan to'g'ridan-to'g'ri yangilash oynasini ochamiz
+      myActivePhoneId = Number(id);
+      openUpdateModal(phone || active);
+      return;
+    }
+  } catch (_) {
+    // my-active so'rovi xato bersa ham, take'ni sinab ko'ramiz
+  }
+
   try {
     await api.takePhone(id);
     myActivePhoneId = Number(id);
@@ -634,7 +673,7 @@ async function loadOpActive() {
 /* ---------- Call History (operator) ---------- */
 async function loadOpHistory() {
   const tbody = document.getElementById("opHistoryBody");
-  tbody.innerHTML = `<tr><td colspan="6" class="muted">Yuklanmoqda...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="7" class="muted">Yuklanmoqda...</td></tr>`;
   try {
     const res = await api.listCallHistory({ dispatcherId: currentUser.id, size: 50 });
     const content = res.content || [];
@@ -642,11 +681,16 @@ async function loadOpHistory() {
     tbody.innerHTML = content.map((h, i) => `
       <tr>
         <td>${i + 1}</td><td>${fmtDate(h.call_date)}</td><td class="phone-mono">${formatPhoneDisplay(h.phone_number)}</td>
-        <td>${badgeHtml(h.status)}</td><td>${h.duration ?? 0}s</td><td>${escapeHtml(h.description || "-")}</td>
+        <td>${badgeHtml(h.status)}</td><td>${h.duration ?? 0}s</td>
+        <td class="cell-truncate">${escapeHtml(h.description || "-")}</td>
+        <td><button class="btn-ghost btn-xs" data-histdetail="${h.id}">Batafsil</button></td>
       </tr>
     `).join("");
+    tbody.querySelectorAll("[data-histdetail]").forEach((b) => {
+      b.addEventListener("click", () => openHistDetails(content.find((x) => x.id == b.dataset.histdetail)));
+    });
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" class="muted">${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="muted">${escapeHtml(err.message)}</td></tr>`;
   }
 }
 
@@ -723,7 +767,8 @@ function initAdminApp() {
   document.getElementById("adDeleteHistBtn").addEventListener("click", async () => {
     const d = document.getElementById("adDeleteUpTo").value;
     if (!d) return showToast("Sana tanlang.");
-    if (!confirm(`${d} sanasigacha bo'lgan tarix butunlay o'chiriladi. Davom etasizmi?`)) return;
+    const ok = await showConfirm(`${d} sanasigacha bo'lgan tarix butunlay o'chiriladi. Davom etasizmi?`, "Tarixni o'chirish");
+    if (!ok) return;
     try { await api.deleteHistoryBeforeDate(d); loadAdHistory(); }
     catch (err) { showToast(err.message || "O'chirib bo'lmadi."); }
   });
@@ -891,7 +936,8 @@ document.getElementById("pfDeleteBtn").addEventListener("click", () => {
 });
 
 async function deletePhoneConfirm(id) {
-  if (!confirm("Bu raqamni o'chirmoqchimisiz?")) return;
+  const ok = await showConfirm("Bu raqamni o'chirmoqchimisiz?", "Raqamni o'chirish");
+  if (!ok) return;
   try { await api.deletePhone(id); loadAdPhones(); }
   catch (err) { showToast(err.message || "O'chirib bo'lmadi."); }
 }
@@ -993,7 +1039,7 @@ async function loadAdHistory() {
       <tr>
         <td>${adHistPage * AD_PAGE_SIZE + i + 1}</td><td>${fmtDate(h.call_date)}</td>
         <td class="phone-mono">${formatPhoneDisplay(h.phone_number)}</td><td>${escapeHtml(h.dispatcher || "-")}</td>
-        <td>${badgeHtml(h.status)}</td><td>${h.duration ?? 0}s</td><td>${escapeHtml(h.description || "-")}</td>
+        <td>${badgeHtml(h.status)}</td><td>${h.duration ?? 0}s</td><td class="cell-truncate">${escapeHtml(h.description || "-")}</td>
         <td><button class="btn-ghost btn-xs" data-histdetail="${h.id}">Batafsil</button></td>
       </tr>
     `).join("") || `<tr><td colspan="8" class="muted">Tarix topilmadi.</td></tr>`;
