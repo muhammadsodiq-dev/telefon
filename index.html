@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Qo'ng'iroqlarni boshqarish tizimi (CMS)</title>
+<title>Call Management System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -11,6 +11,9 @@
 </head>
 <body>
 
+<!-- ======================================================================
+     AUTH: LOGIN / REGISTER / VERIFY / FORGOT
+     ====================================================================== -->
 <section id="authScreen" class="auth-screen">
   <div class="sweep-field"><div class="sweep-line"></div><div class="grid-dots"></div></div>
 
@@ -22,6 +25,7 @@
       <span class="brand-name">CALL<span class="brand-accent">/MS</span></span>
     </div>
 
+    <!-- ---------- LOGIN VIEW ---------- -->
     <div id="loginView" class="auth-view">
       <h1 class="auth-title">Xush kelibsiz</h1>
       <p class="auth-sub">Tizimga kirish uchun ma'lumotlaringizni kiriting</p>
@@ -49,6 +53,7 @@
       </div>
     </div>
 
+    <!-- ---------- REGISTER VIEW ---------- -->
     <div id="registerView" class="auth-view is-hidden">
       <button class="back-btn" data-goto="loginView">&larr;</button>
       <h1 class="auth-title">Akkount yaratish</h1>
@@ -85,6 +90,7 @@
       </div>
     </div>
 
+    <!-- ---------- VERIFY VIEW ---------- -->
     <div id="verifyView" class="auth-view is-hidden">
       <button class="back-btn" data-goto="registerView">&larr;</button>
       <h1 class="auth-title">Emailni tasdiqlang</h1>
@@ -107,6 +113,7 @@
       </div>
     </div>
 
+    <!-- ---------- VERIFICATION SUCCESS ---------- -->
     <div id="verifiedView" class="auth-view is-hidden">
       <div class="success-tick">✓</div>
       <h1 class="auth-title" style="text-align:center">Email tasdiqlandi!</h1>
@@ -114,6 +121,7 @@
       <button class="btn-primary btn-full" data-goto="loginView">Kirish sahifasiga o'tish</button>
     </div>
 
+    <!-- ---------- FORGOT PASSWORD VIEW ---------- -->
     <div id="forgotView" class="auth-view is-hidden">
       <button class="back-btn" data-goto="loginView">&larr;</button>
       <h1 class="auth-title">Parolni tiklash</h1>
@@ -133,6 +141,7 @@
       </form>
     </div>
 
+    <!-- ---------- RESET PASSWORD (OTP) VIEW ---------- -->
     <div id="resetView" class="auth-view is-hidden">
       <button class="back-btn" data-goto="forgotView">&larr;</button>
       <h1 class="auth-title">Yangi parol</h1>
@@ -154,6 +163,9 @@
   </div>
 </section>
 
+<!-- ======================================================================
+     OPERATOR APP
+     ====================================================================== -->
 <section id="operatorApp" class="app-shell is-hidden">
   <aside class="sidebar">
     <div class="sidebar-brand">
@@ -161,37 +173,38 @@
       <span>Call Management</span>
     </div>
     <nav class="sidebar-nav">
-      <button class="nav-item active" data-view="opDashboard">📋 Dashboard</button>
-      <button class="nav-item" data-view="opActive">📞 Mening faol raqamim</button>
+      <button class="nav-item active" data-view="opDashboard">📋 Bosh sahifa</button>
+      <button class="nav-item" data-view="opActive">📞 Faol raqamim</button>
       <button class="nav-item" data-view="opHistory">🕓 Qo'ng'iroqlar tarixi</button>
       <button class="nav-item" data-view="opProfile">👤 Profilim</button>
-      <button class="nav-item" data-view="opPassword">🔒 Parolni yangilash</button>
+      <button class="nav-item" data-view="opPassword">🔒 Parolni tiklash</button>
       <button class="nav-item nav-logout" id="opLogoutBtn">↩ Chiqish</button>
     </nav>
   </aside>
 
   <main class="main-area">
+    <!-- ---------- OPERATOR DASHBOARD (phone list) ---------- -->
     <div id="opDashboardView" class="op-view">
       <div class="topbar">
         <div class="search-wrap">
           <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M14 14L18 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-          <input type="text" id="opSearchInput" placeholder="Telefon raqamini qidirish...">
+          <input type="text" id="opSearchInput" placeholder="Telefon raqami bo'yicha qidirish...">
         </div>
         <select id="opStatusFilter" class="select-compact">
           <option value="">Barcha holatlar</option>
-          <option value="NEW">YANGI (NEW)</option>
-          <option value="IN_PROGRESS">JARAYONDA (IN_PROGRESS)</option>
-          <option value="CONNECTED">BOG'LANDI (CONNECTED)</option>
-          <option value="NO_ANSWER">JAVOB BERMADI (NO_ANSWER)</option>
-          <option value="BUSY">BAND (BUSY)</option>
-          <option value="CALLBACK_REQUIRED">QAYTA QO'NG'IROQ (CALLBACK_REQUIRED)</option>
-          <option value="WRONG_NUMBER">XATO RAQAM (WRONG_NUMBER)</option>
-          <option value="NOT_INTERESTED">QIZIQMADI (NOT_INTERESTED)</option>
-          <option value="BLACKLISTED">QORA RO'YXAT (BLACKLISTED)</option>
-          <option value="FINISHED">YAKUNLANDI (FINISHED)</option>
+          <option value="NEW">Yangi</option>
+          <option value="IN_PROGRESS">Jarayonda</option>
+          <option value="CONNECTED">Bog'landi</option>
+          <option value="NO_ANSWER">Ko'tarilmadi</option>
+          <option value="BUSY">Band</option>
+          <option value="CALLBACK_REQUIRED">Qayta aloqa</option>
+          <option value="WRONG_NUMBER">Noto'g'ri raqam</option>
+          <option value="NOT_INTERESTED">Qiziqmadi</option>
+          <option value="BLACKLISTED">Qora ro'yxatda</option>
+          <option value="FINISHED">Yakunlangan</option>
         </select>
         <div class="user-chip">
-          <span class="user-avatar" id="opAvatar">O</span>
+          <span class="user-avatar" id="opAvatar">A</span>
           <div>
             <div id="opUserName" class="user-chip-name"></div>
             <div class="user-chip-role">Operator</div>
@@ -201,15 +214,15 @@
 
       <div id="opActiveBanner" class="active-banner is-hidden">
         <span class="live-dot"></span>
-        <span>Ushbu raqam ayni paytda foydalanilmoqda: <strong id="opActiveBannerName"></strong></span>
-        <span class="live-badge">ONLAYN</span>
+        <span>Bu raqam hozir band: <strong id="opActiveBannerName"></strong></span>
+        <span class="live-badge">FAOL</span>
       </div>
 
       <div class="panel table-panel">
         <div class="table-scroll">
           <table>
             <thead><tr>
-              <th>#</th><th>Telefon raqami</th><th>Mijoz ismi</th><th>Holati</th><th>Yaratilgan sana</th><th></th>
+              <th>#</th><th>Telefon raqami</th><th>Ism-familiya</th><th>Holat</th><th>Qo'shilgan</th><th></th>
             </tr></thead>
             <tbody id="opTableBody"></tbody>
           </table>
@@ -219,19 +232,21 @@
       </div>
     </div>
 
+    <!-- ---------- MY ACTIVE PHONE ---------- -->
     <div id="opActiveView" class="op-view is-hidden">
-      <h2 class="view-title">Mening faol raqamim</h2>
+      <h2 class="view-title">Faol raqamim</h2>
       <div id="opActiveCard" class="panel active-phone-card">
         <p class="muted">Yuklanmoqda...</p>
       </div>
     </div>
 
+    <!-- ---------- CALL HISTORY (operator) ---------- -->
     <div id="opHistoryView" class="op-view is-hidden">
       <h2 class="view-title">Qo'ng'iroqlar tarixi</h2>
       <div class="panel table-panel">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>#</th><th>Sana va vaqt</th><th>Telefon</th><th>Holati</th><th>Davomiyligi</th><th>Izoh</th></tr></thead>
+            <thead><tr><th>#</th><th>Sana va vaqt</th><th>Raqam</th><th>Holat</th><th>Davomiyligi</th><th>Izoh</th></tr></thead>
             <tbody id="opHistoryBody"></tbody>
           </table>
         </div>
@@ -239,11 +254,12 @@
       </div>
     </div>
 
+    <!-- ---------- MY PROFILE ---------- -->
     <div id="opProfileView" class="op-view is-hidden">
-      <h2 class="view-title">Mening profilim</h2>
+      <h2 class="view-title">Profilim</h2>
       <div class="panel profile-panel">
         <div class="profile-head">
-          <span class="user-avatar big" id="opProfileAvatar">O</span>
+          <span class="user-avatar big" id="opProfileAvatar">A</span>
           <div>
             <div class="profile-name" id="opProfileName"></div>
             <div class="profile-email" id="opProfileEmail"></div>
@@ -262,8 +278,9 @@
       </div>
     </div>
 
+    <!-- ---------- RESET PASSWORD (operator, in-app) ---------- -->
     <div id="opPasswordView" class="op-view is-hidden">
-      <h2 class="view-title">Parolni yangilash</h2>
+      <h2 class="view-title">Parolni tiklash</h2>
       <div class="panel profile-panel">
         <p class="muted" style="margin-bottom:16px;">Parolni yangilash uchun "Parolni unutdingizmi" jarayonidan foydalaning — bu email orqali kod yuboradi.</p>
         <button class="btn-secondary" id="opGoForgotBtn">Parolni tiklash jarayonini boshlash</button>
@@ -272,6 +289,9 @@
   </main>
 </section>
 
+<!-- ======================================================================
+     ADMIN APP
+     ====================================================================== -->
 <section id="adminApp" class="app-shell is-hidden">
   <aside class="sidebar">
     <div class="sidebar-brand">
@@ -279,19 +299,20 @@
       <span>Call Management</span>
     </div>
     <nav class="sidebar-nav">
-      <button class="nav-item active" data-view="adDashboard">📊 Dashboard</button>
+      <button class="nav-item active" data-view="adDashboard">📊 Bosh sahifa</button>
       <button class="nav-item" data-view="adPhones">📱 Raqamlar</button>
       <button class="nav-item" data-view="adUsers">👥 Foydalanuvchilar</button>
       <button class="nav-item" data-view="adHistory">🕓 Qo'ng'iroqlar tarixi</button>
-      <button class="nav-item" data-view="adUnlock">🔓 Raqamni blokdan ochish</button>
+      <button class="nav-item" data-view="adUnlock">🔓 Bandlikni bekor qilish</button>
       <button class="nav-item" data-view="adImport">📥 Raqam qo'shish</button>
       <button class="nav-item nav-logout" id="adLogoutBtn">↩ Chiqish</button>
     </nav>
   </aside>
 
   <main class="main-area">
+    <!-- ---------- ADMIN DASHBOARD ---------- -->
     <div id="adDashboardView" class="op-view">
-      <h2 class="view-title">Admin paneli</h2>
+      <h2 class="view-title">Admin bosh sahifasi</h2>
 
       <div class="stat-grid" id="adStatGrid"></div>
 
@@ -302,25 +323,26 @@
           <div class="legend" id="adPhoneLegend"></div>
         </div>
         <div class="panel chart-panel">
-          <h3>Qo'ng'iroqlar tarixi statistikasi</h3>
+          <h3>Qo'ng'iroqlar statistikasi</h3>
           <div class="donut-wrap" id="adCallDonut"></div>
           <div class="legend" id="adCallLegend"></div>
         </div>
       </div>
     </div>
 
+    <!-- ---------- ADMIN: PHONES MANAGEMENT ---------- -->
     <div id="adPhonesView" class="op-view is-hidden">
       <div class="topbar">
         <div class="search-wrap">
           <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M14 14L18 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-          <input type="text" id="adPhoneSearch" placeholder="Raqamni qidirish...">
+          <input type="text" id="adPhoneSearch" placeholder="Raqam qidirish...">
         </div>
         <button class="btn-primary" id="adAddPhoneBtn">+ Raqam qo'shish</button>
       </div>
       <div class="panel table-panel">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>#</th><th>Telefon raqami</th><th>Mijoz ismi</th><th>Holati</th><th>Yaratilgan sana</th><th>Amallar</th></tr></thead>
+            <thead><tr><th>#</th><th>Telefon raqami</th><th>Ism-familiya</th><th>Holat</th><th>Qo'shilgan</th><th>Amallar</th></tr></thead>
             <tbody id="adPhonesBody"></tbody>
           </table>
         </div>
@@ -328,68 +350,77 @@
       </div>
     </div>
 
+    <!-- ---------- ADMIN: USERS MANAGEMENT ---------- -->
     <div id="adUsersView" class="op-view is-hidden">
       <div class="topbar">
         <div class="search-wrap">
           <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M14 14L18 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-          <input type="text" id="adUserSearch" placeholder="Foydalanuvchini qidirish...">
+          <input type="text" id="adUserSearch" placeholder="Foydalanuvchi qidirish...">
         </div>
         <span class="muted small">Foydalanuvchilar faqat ro'yxatdan o'tish orqali qo'shiladi</span>
       </div>
       <div class="panel table-panel">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>#</th><th>To'liq ismi</th><th>Email</th><th>Rol</th><th>Holati</th><th>Amallar</th></tr></thead>
+            <thead><tr><th>#</th><th>To'liq ism</th><th>Email</th><th>Rol</th><th>Holat</th><th>Amallar</th></tr></thead>
             <tbody id="adUsersBody"></tbody>
           </table>
         </div>
       </div>
     </div>
 
+    <!-- ---------- ADMIN: CALL HISTORY ---------- -->
     <div id="adHistoryView" class="op-view is-hidden">
       <div class="panel filters-panel">
         <div class="filters-row">
           <label class="field-inline"><span>Dan</span><input type="date" id="adHistFrom"></label>
           <label class="field-inline"><span>Gacha</span><input type="date" id="adHistTo"></label>
-          <label class="field-inline"><span>Holati</span>
-            <select id="adHistStatus"><option value="">Barchasi</option>
-              <option value="NEW">NEW</option><option value="IN_PROGRESS">IN_PROGRESS</option><option value="CONNECTED">CONNECTED</option>
-              <option value="NO_ANSWER">NO_ANSWER</option><option value="BUSY">BUSY</option><option value="CALLBACK_REQUIRED">CALLBACK_REQUIRED</option>
-              <option value="WRONG_NUMBER">WRONG_NUMBER</option><option value="NOT_INTERESTED">NOT_INTERESTED</option>
-              <option value="BLACKLISTED">BLACKLISTED</option><option value="FINISHED">FINISHED</option>
+          <label class="field-inline"><span>Holat</span>
+            <select id="adHistStatus"><option value="">All</option>
+              <option value="NEW">Yangi</option><option value="IN_PROGRESS">Jarayonda</option><option value="CONNECTED">Bog'landi</option>
+              <option value="NO_ANSWER">Ko'tarilmadi</option><option value="BUSY">Band</option><option value="CALLBACK_REQUIRED">Qayta aloqa</option>
+              <option value="WRONG_NUMBER">Noto'g'ri raqam</option><option value="NOT_INTERESTED">Qiziqmadi</option>
+              <option value="BLACKLISTED">Qora ro'yxatda</option><option value="FINISHED">Yakunlangan</option>
             </select>
           </label>
-          <button class="btn-secondary" id="adHistApplyBtn">Saralash</button>
-          <button class="btn-ghost" id="adHistResetBtn">Tashlash</button>
-        </div>
-        <div class="filters-row">
-          <label class="field-inline"><span>Tarixni tozalash (sana)</span><input type="date" id="adDeleteUpTo"></label>
-          <button class="btn-danger" id="adDeleteHistBtn">Ko'rsatilgan sanagacha o'chirish</button>
-          <span class="muted small">Bu amalni ortga qaytarib bo'lmaydi</span>
+          <button class="btn-secondary" id="adHistApplyBtn">Filtrlash</button>
+          <button class="btn-ghost" id="adHistResetBtn">Tozalash</button>
         </div>
       </div>
+
       <div class="panel table-panel">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>#</th><th>Sana va vaqt</th><th>Telefon</th><th>Dispetcher (Operator)</th><th>Holati</th><th>Davomiyligi</th><th>Izoh</th></tr></thead>
+            <thead><tr><th>#</th><th>Sana va vaqt</th><th>Raqam</th><th>Dispetcher</th><th>Holat</th><th>Davomiyligi</th><th>Izoh</th></tr></thead>
             <tbody id="adHistoryBody"></tbody>
           </table>
         </div>
         <div class="pager" id="adHistoryPager"></div>
       </div>
-    </div>
 
-    <div id="adUnlockView" class="op-view is-hidden">
-      <h2 class="view-title">Raqamni blokdan ochish</h2>
-      <div class="panel" style="max-width:480px;">
-        <p class="muted" style="margin-bottom:14px;">Band qilingan (operator foydalanayotgan) raqamni ID orqali bo'shatish</p>
-        <label class="field"><span class="field-label">Telefon ID raqami</span><input type="text" id="adUnlockId" placeholder="Masalan: 4"></label>
-        <p id="adUnlockError" class="auth-error is-hidden"></p>
-        <p id="adUnlockSuccess" class="auth-success is-hidden">Bo'shatildi!</p>
-        <button class="btn-primary" id="adUnlockBtn">Ochish</button>
+      <div class="panel danger-zone-panel">
+        <h3 class="danger-zone-title">⚠️ Tarixni o'chirish</h3>
+        <p class="muted small" style="margin-bottom:12px;">Belgilangan sanagacha bo'lgan barcha qo'ng'iroqlar tarixi butunlay o'chiriladi. Bu amal qaytarib bo'lmaydi.</p>
+        <div class="filters-row">
+          <label class="field-inline"><span>Shu sanagacha o'chirish</span><input type="date" id="adDeleteUpTo"></label>
+          <button class="btn-danger" id="adDeleteHistBtn">Tarixni o'chirish</button>
+        </div>
       </div>
     </div>
 
+    <!-- ---------- ADMIN: UNLOCK PHONE ---------- -->
+    <div id="adUnlockView" class="op-view is-hidden">
+      <h2 class="view-title">Bandlikni bekor qilish</h2>
+      <div class="panel" style="max-width:480px;">
+        <p class="muted" style="margin-bottom:14px;">Band qilingan raqamni ID orqali bo'shatish</p>
+        <label class="field"><span class="field-label">Raqam ID raqami</span><input type="text" id="adUnlockId" placeholder="Masalan: 4"></label>
+        <p id="adUnlockError" class="auth-error is-hidden"></p>
+        <p id="adUnlockSuccess" class="auth-success is-hidden">Bo'shatildi!</p>
+        <button class="btn-primary" id="adUnlockBtn">Bo'shatish</button>
+      </div>
+    </div>
+
+    <!-- ---------- ADMIN: IMPORT PHONES ---------- -->
     <div id="adImportView" class="op-view is-hidden">
       <h2 class="view-title">Raqam qo'shish</h2>
       <div class="panel" style="max-width:480px;">
@@ -406,38 +437,45 @@
   </main>
 </section>
 
+<!-- ======================================================================
+     UMUMIY MODALLAR
+     ====================================================================== -->
+
+<!-- Phone Details modal -->
 <div id="detailsModal" class="modal-overlay">
   <div class="modal">
-    <div class="modal-head"><h3>Raqam tafsilotlari</h3><button class="icon-btn js-close" data-modal="detailsModal">&times;</button></div>
+    <div class="modal-head"><h3>Raqam haqida ma'lumot</h3><button class="icon-btn js-close" data-modal="detailsModal">&times;</button></div>
     <div id="detailsBody" class="details-body"></div>
     <div class="modal-actions">
       <button class="btn-secondary" id="detailsCloseBtn">Yopish</button>
-      <button class="btn-primary" id="detailsTakeBtn">Biriktirish (Olish)</button>
+      <button class="btn-primary" id="detailsTakeBtn">Band qilish</button>
     </div>
   </div>
 </div>
 
+<!-- Take & Update modal -->
 <div id="updateModal" class="modal-overlay">
   <div class="modal">
-    <div class="modal-head"><h3>Raqamni olish va yangilash</h3><button class="icon-btn js-close" data-modal="updateModal">&times;</button></div>
+    <div class="modal-head"><h3>Band qilish va holat belgilash</h3><button class="icon-btn js-close" data-modal="updateModal">&times;</button></div>
     <div class="modal-phone-label" id="updatePhoneLabel"></div>
     <form id="updateForm">
       <input type="hidden" id="uId">
-      <label class="field"><span class="field-label">Holati *</span>
+      <label class="field"><span class="field-label">Holat *</span>
         <select id="uStatus" required>
-          <option value="NEW">YANGI (NEW)</option><option value="IN_PROGRESS">JARAYONDA (IN_PROGRESS)</option><option value="CONNECTED">BOG'LANDI (CONNECTED)</option>
-          <option value="NO_ANSWER">JAVOB BERMADI (NO_ANSWER)</option><option value="BUSY">BAND (BUSY)</option><option value="CALLBACK_REQUIRED">QAYTA QO'NG'IROQ (CALLBACK_REQUIRED)</option>
-          <option value="WRONG_NUMBER">XATO RAQAM (WRONG_NUMBER)</option><option value="NOT_INTERESTED">QIZIQMADI (NOT_INTERESTED)</option>
-          <option value="BLACKLISTED">QORA RO'YXAT (BLACKLISTED)</option><option value="FINISHED">YAKUNLANDI (FINISHED)</option>
+          <option value="NEW">Yangi</option><option value="IN_PROGRESS">Jarayonda</option><option value="CONNECTED">Bog'landi</option>
+          <option value="NO_ANSWER">Ko'tarilmadi</option><option value="BUSY">Band</option><option value="CALLBACK_REQUIRED">Qayta aloqa</option>
+          <option value="WRONG_NUMBER">Noto'g'ri raqam</option><option value="NOT_INTERESTED">Qiziqmadi</option>
+          <option value="BLACKLISTED">Qora ro'yxatda</option><option value="FINISHED">Yakunlangan</option>
         </select>
       </label>
-      <label class="field"><span class="field-label">Izoh (Qo'ng'iroqlar tarixi uchun) *</span><textarea id="uDescription" rows="3" required></textarea></label>
+      <label class="field"><span class="field-label">Izoh (qo'ng'iroq tarixi) *</span><textarea id="uDescription" rows="3" required></textarea></label>
       <p id="updateError" class="auth-error is-hidden"></p>
-      <button type="submit" class="btn-primary btn-full">Saqlash</button>
+      <button type="submit" class="btn-primary btn-full">Save</button>
     </form>
   </div>
 </div>
 
+<!-- Add/Edit Phone modal (admin) -->
 <div id="phoneFormModal" class="modal-overlay">
   <div class="modal">
     <div class="modal-head"><h3 id="phoneFormTitle">Raqam qo'shish</h3><button class="icon-btn js-close" data-modal="phoneFormModal">&times;</button></div>
