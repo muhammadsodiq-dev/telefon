@@ -500,8 +500,13 @@ document.getElementById("updateForm").addEventListener("submit", async (e) => {
       description: document.getElementById("uDescription").value.trim(),
     });
     closeModal("updateModal");
-    loadOpPhones();
-    loadOpMyActiveBanner();
+    if (!document.getElementById("operatorApp").classList.contains("is-hidden")) {
+      loadOpPhones();
+      loadOpMyActiveBanner();
+    }
+    if (!document.getElementById("adminApp").classList.contains("is-hidden")) {
+      loadAdPhones();
+    }
   } catch (e2) {
     err.textContent = e2.message || "Saqlab bo'lmadi.";
     err.classList.remove("is-hidden");
@@ -737,11 +742,13 @@ async function loadAdPhones() {
         <td>${badgeHtml(r.status)}</td>
         <td>${fmtDate(r.created_at)}</td>
         <td><div class="row-actions">
+          <button class="btn-primary btn-xs" data-take="${r.id}">Band qilish</button>
           <button class="icon-btn" data-edit="${r.id}" title="Tahrirlash">✎</button>
           <button class="icon-btn" data-del="${r.id}" title="O'chirish">🗑</button>
         </div></td>
       </tr>
     `).join("");
+    tbody.querySelectorAll("[data-take]").forEach((b) => b.addEventListener("click", () => doTake(b.dataset.take, res.content.find(x => x.id == b.dataset.take))));
     tbody.querySelectorAll("[data-edit]").forEach((b) => b.addEventListener("click", () => openPhoneForm(res.content.find(x => x.id == b.dataset.edit))));
     tbody.querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => deletePhoneConfirm(b.dataset.del)));
     renderPager(document.getElementById("adPhonesPager"), adPhonesPage, res.total_pages, (p) => { adPhonesPage = p; loadAdPhones(); });
