@@ -246,7 +246,7 @@
       <div class="panel table-panel">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>#</th><th>Sana va vaqt</th><th>Raqam</th><th>Holat</th><th>Davomiyligi</th><th>Izoh</th></tr></thead>
+            <thead><tr><th>#</th><th>Sana va vaqt</th><th>Raqam</th><th>Holat</th><th>Davomiyligi</th><th>Izoh</th><th>Amallar</th></tr></thead>
             <tbody id="opHistoryBody"></tbody>
           </table>
         </div>
@@ -446,6 +446,18 @@
 <!-- ======================================================================
      UMUMIY MODALLAR
      ====================================================================== -->
+
+<!-- Umumiy tasdiqlash modali (browser confirm() o'rniga) -->
+<div id="confirmModal" class="modal-overlay">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-head"><h3 id="confirmTitle">Tasdiqlang</h3></div>
+    <p id="confirmMessage" class="muted" style="margin-bottom:18px;font-size:13.5px;line-height:1.5;"></p>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="confirmCancelBtn">Bekor qilish</button>
+      <button class="btn-danger" id="confirmOkBtn">OK</button>
+    </div>
+  </div>
+</div>
 
 <!-- Phone Details modal -->
 <div id="detailsModal" class="modal-overlay">
