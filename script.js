@@ -3,7 +3,7 @@
    ========================================================================= */
 
 const API_BASE_URL = ""; // Vercel serverless proksi orqali (/api/[...path].js)
-const WS_URL = ""; // <-- backend WebSocket manzilini shu yerga yozing, masalan: "wss://178.104.182.81:8082/ws"
+const WS_URL = "http://178.104.182.81:8082/ws"; // <-- backend WebSocket manzilini shu yerga yozing, masalan: "wss://178.104.182.81:8082/ws"
 
 let ws = null;
 let phoneLockMap = {}; // phoneId -> {locked, operatorId, operatorName}
