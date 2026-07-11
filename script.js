@@ -3,6 +3,47 @@
    ========================================================================= */
 
 const API_BASE_URL = ""; // Vercel serverless proksi orqali (/api/[...path].js)
+const WS_URL = ""; // <-- backend WebSocket manzilini shu yerga yozing, masalan: "wss://178.104.182.81:8082/ws"
+
+let ws = null;
+let phoneLockMap = {}; // phoneId -> {locked, operatorId, operatorName}
+
+function connectWebSocket() {
+  if (!WS_URL) return;
+  try {
+    ws = new WebSocket(WS_URL);
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.phoneId !== undefined) {
+          phoneLockMap[data.phoneId] = { locked: data.locked, operatorId: data.operatorId, operatorName: data.operatorName };
+          refreshLockDisplays();
+        }
+      } catch (_) {}
+    };
+    ws.onclose = () => { setTimeout(connectWebSocket, 3000); };
+    ws.onerror = () => { try { ws.close(); } catch (_) {} };
+  } catch (_) {}
+}
+
+function lockCellHtml(id) {
+  const info = phoneLockMap[id];
+  if (info && info.locked) {
+    return `<span class="live-dot" style="display:inline-block;"></span> <span class="muted small">${escapeHtml(info.operatorName || "Band")}</span>`;
+  }
+  return "";
+}
+
+function refreshLockDisplays() {
+  document.querySelectorAll("[data-lock-row]").forEach((row) => {
+    const id = row.dataset.lockRow;
+    const cell = row.querySelector(".lock-indicator");
+    if (cell) cell.innerHTML = lockCellHtml(id);
+    const takeBtn = row.querySelector("[data-take]");
+    const info = phoneLockMap[id];
+    if (takeBtn) takeBtn.disabled = !!(info && info.locked && info.operatorId !== (currentUser && currentUser.id));
+  });
+}
 
 const UZ_MOBILE_PREFIXES = ["90","91","93","94","95","97","98","99","33","88","20","50","55","77"];
 
@@ -133,6 +174,19 @@ function escapeHtml(str) {
   div.textContent = str == null ? "" : String(str);
   return div.innerHTML;
 }
+function getUserFullName(u) {
+  if (!u) return "-";
+  // Backend turli field nomlarida qaytarishi mumkin — hammasini sinab ko'ramiz
+  const first = u.first_name || u.firstName || "";
+  const last = u.last_name || u.lastName || "";
+  const combined = `${first} ${last}`.trim();
+  if (combined) return combined;
+  if (u.full_name) return u.full_name;
+  if (u.fullName) return u.fullName;
+  if (u.name) return u.name;
+  if (u.username) return u.username;
+  return "-";
+}
 function badgeHtml(status) {
   const m = STATUS_META[status] || { label: status, color: "neutral" };
   return `<span class="badge ${m.color}"><span class="dot"></span>${m.label}</span>`;
@@ -188,6 +242,7 @@ async function afterLogin() {
   document.getElementById("authScreen").classList.add("is-hidden");
 
   const role = (currentUser.role || "USER").toUpperCase();
+  connectWebSocket();
   if (role === "ADMIN" || role === "SUPER_USER") {
     show("adminApp");
     initAdminApp();
@@ -379,8 +434,8 @@ const OP_PAGE_SIZE = 8;
 let opDebounce = null;
 
 function initOperatorApp() {
-  document.getElementById("opAvatar").textContent = (currentUser.first_name || "?")[0].toUpperCase();
-  document.getElementById("opUserName").textContent = `${currentUser.first_name || ""} ${currentUser.last_name || ""}`.trim();
+  document.getElementById("opAvatar").textContent = getUserFullName(currentUser)[0].toUpperCase();
+  document.getElementById("opUserName").textContent = getUserFullName(currentUser);
 
   document.querySelectorAll("#operatorApp .nav-item[data-view]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -428,12 +483,12 @@ async function loadOpPhones() {
     });
     document.getElementById("opEmptyState").classList.toggle("is-hidden", res.content.length !== 0);
     tbody.innerHTML = res.content.map((r, i) => `
-      <tr>
+      <tr data-lock-row="${r.id}">
         <td>${opPage * OP_PAGE_SIZE + i + 1}</td>
         <td class="phone-mono">${formatPhoneDisplay(r.phone_number)}</td>
         <td>${escapeHtml(r.owner_name || "-")}</td>
         <td>${badgeHtml(r.status)}</td>
-        <td>${fmtDate(r.created_at)}</td>
+        <td class="lock-indicator">${lockCellHtml(r.id)}</td>
         <td>
           <div class="row-actions">
             <button class="btn-ghost btn-xs" data-show="${r.id}">Ko'rish</button>
@@ -564,8 +619,8 @@ async function loadOpHistory() {
 
 /* ---------- Profile ---------- */
 function loadOpProfile() {
-  document.getElementById("opProfileAvatar").textContent = (currentUser.first_name || "?")[0].toUpperCase();
-  document.getElementById("opProfileName").textContent = `${currentUser.first_name || ""} ${currentUser.last_name || ""}`.trim();
+  document.getElementById("opProfileAvatar").textContent = getUserFullName(currentUser)[0].toUpperCase();
+  document.getElementById("opProfileName").textContent = getUserFullName(currentUser);
   document.getElementById("opProfileEmail").textContent = currentUser.email || "";
   document.getElementById("opProfileFirstName").value = currentUser.first_name || "";
   document.getElementById("opProfileLastName").value = currentUser.last_name || "";
@@ -735,12 +790,12 @@ async function loadAdPhones() {
   try {
     const res = await api.listPhones({ search: document.getElementById("adPhoneSearch").value.trim(), page: adPhonesPage, size: AD_PAGE_SIZE });
     tbody.innerHTML = res.content.map((r, i) => `
-      <tr>
+      <tr data-lock-row="${r.id}">
         <td>${adPhonesPage * AD_PAGE_SIZE + i + 1}</td>
         <td class="phone-mono">${formatPhoneDisplay(r.phone_number)}</td>
         <td>${escapeHtml(r.owner_name || "-")}</td>
         <td>${badgeHtml(r.status)}</td>
-        <td>${fmtDate(r.created_at)}</td>
+        <td class="lock-indicator">${lockCellHtml(r.id)}</td>
         <td><div class="row-actions">
           <button class="btn-primary btn-xs" data-take="${r.id}">Band qilish</button>
           <button class="icon-btn" data-edit="${r.id}" title="Tahrirlash">✎</button>
@@ -834,7 +889,7 @@ function renderAdUsersPage() {
   tbody.innerHTML = list.map((u, i) => `
       <tr>
         <td>${start + i + 1}</td>
-        <td>${escapeHtml(`${u.first_name || ""} ${u.last_name || ""}`.trim())}</td>
+        <td>${escapeHtml(getUserFullName(u))}</td>
         <td>${escapeHtml(u.email || "-")}</td>
         <td>
           <select class="select-compact role-select" data-uid="${u.id}" style="padding:5px 24px 5px 8px;font-size:12px;">
