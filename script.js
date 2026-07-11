@@ -7,16 +7,16 @@ const API_BASE_URL = ""; // Vercel serverless proksi orqali (/api/[...path].js)
 const UZ_MOBILE_PREFIXES = ["90","91","93","94","95","97","98","99","33","88","20","50","55","77"];
 
 const STATUS_META = {
-  NEW: { label: "NEW", color: "neutral" },
-  IN_PROGRESS: { label: "IN_PROGRESS", color: "accent" },
-  CONNECTED: { label: "CONNECTED", color: "ok" },
-  NO_ANSWER: { label: "NO_ANSWER", color: "warn" },
-  BUSY: { label: "BUSY", color: "warn" },
-  CALLBACK_REQUIRED: { label: "CALLBACK", color: "purple" },
-  WRONG_NUMBER: { label: "WRONG_NUMBER", color: "neutral" },
-  NOT_INTERESTED: { label: "NOT_INTERESTED", color: "neutral" },
-  BLACKLISTED: { label: "BLACKLISTED", color: "danger" },
-  FINISHED: { label: "FINISHED", color: "ok" },
+  NEW: { label: "Yangi", color: "neutral" },
+  IN_PROGRESS: { label: "Jarayonda", color: "accent" },
+  CONNECTED: { label: "Bog'landi", color: "ok" },
+  NO_ANSWER: { label: "Ko'tarilmadi", color: "warn" },
+  BUSY: { label: "Band", color: "warn" },
+  CALLBACK_REQUIRED: { label: "Qayta aloqa", color: "purple" },
+  WRONG_NUMBER: { label: "Noto'g'ri raqam", color: "neutral" },
+  NOT_INTERESTED: { label: "Qiziqmadi", color: "neutral" },
+  BLACKLISTED: { label: "Qora ro'yxatda", color: "danger" },
+  FINISHED: { label: "Yakunlangan", color: "ok" },
 };
 const STATUS_LIST = Object.keys(STATUS_META);
 
@@ -436,8 +436,8 @@ async function loadOpPhones() {
         <td>${fmtDate(r.created_at)}</td>
         <td>
           <div class="row-actions">
-            <button class="btn-ghost btn-xs" data-show="${r.id}">Show</button>
-            <button class="btn-primary btn-xs" data-take="${r.id}">Take</button>
+            <button class="btn-ghost btn-xs" data-show="${r.id}">Ko'rish</button>
+            <button class="btn-primary btn-xs" data-take="${r.id}">Band qilish</button>
           </div>
         </td>
       </tr>
@@ -524,8 +524,8 @@ async function loadOpActive() {
       <div class="ap-row"><span class="muted">Owner Name</span><span>${escapeHtml(r.owner_name || "-")}</span></div>
       <div class="ap-row"><span class="muted">Created At</span><span>${fmtDate(r.created_at)}</span></div>
       <div class="ap-actions">
-        <button class="btn-primary" id="apContinueBtn">Continue Update</button>
-        <button class="btn-danger" id="apReleaseBtn">Release</button>
+        <button class="btn-primary" id="apContinueBtn">Davom ettirish</button>
+        <button class="btn-danger" id="apReleaseBtn">Bo'shatish</button>
       </div>
     `;
     document.getElementById("apContinueBtn").addEventListener("click", () => openUpdateModal(r));
@@ -677,13 +677,13 @@ async function loadAdminDashboard() {
     phones.forEach((p) => { if (counts[p.status] !== undefined) counts[p.status]++; });
 
     grid.innerHTML = `
-      <div class="stat-card"><div class="stat-label">Total Phones</div><div class="stat-value">${totalPhones}</div></div>
-      <div class="stat-card purple"><div class="stat-label">Total Users</div><div class="stat-value">${usersArr.length}</div></div>
-      <div class="stat-card accent"><div class="stat-label">In Progress</div><div class="stat-value">${counts.IN_PROGRESS}</div></div>
-      <div class="stat-card ok"><div class="stat-label">Connected</div><div class="stat-value">${counts.CONNECTED}</div></div>
-      <div class="stat-card warn"><div class="stat-label">Busy</div><div class="stat-value">${counts.BUSY}</div></div>
-      <div class="stat-card warn"><div class="stat-label">No Answer</div><div class="stat-value">${counts.NO_ANSWER}</div></div>
-      <div class="stat-card purple"><div class="stat-label">Callback</div><div class="stat-value">${counts.CALLBACK_REQUIRED}</div></div>
+      <div class="stat-card"><div class="stat-label">Jami raqamlar</div><div class="stat-value">${totalPhones}</div></div>
+      <div class="stat-card purple"><div class="stat-label">Jami foydalanuvchilar</div><div class="stat-value">${usersArr.length}</div></div>
+      <div class="stat-card accent"><div class="stat-label">Jarayonda</div><div class="stat-value">${counts.IN_PROGRESS}</div></div>
+      <div class="stat-card ok"><div class="stat-label">Bog'landi</div><div class="stat-value">${counts.CONNECTED}</div></div>
+      <div class="stat-card warn"><div class="stat-label">Band</div><div class="stat-value">${counts.BUSY}</div></div>
+      <div class="stat-card warn"><div class="stat-label">Ko'tarilmadi</div><div class="stat-value">${counts.NO_ANSWER}</div></div>
+      <div class="stat-card purple"><div class="stat-label">Qayta aloqa</div><div class="stat-value">${counts.CALLBACK_REQUIRED}</div></div>
     `;
 
     renderDonut("adPhoneDonut", "adPhoneLegend", counts);
@@ -735,8 +735,8 @@ async function loadAdPhones() {
         <td>${badgeHtml(r.status)}</td>
         <td>${fmtDate(r.created_at)}</td>
         <td><div class="row-actions">
-          <button class="icon-btn" data-edit="${r.id}" title="Edit">✎</button>
-          <button class="icon-btn" data-del="${r.id}" title="Delete">🗑</button>
+          <button class="icon-btn" data-edit="${r.id}" title="Tahrirlash">✎</button>
+          <button class="icon-btn" data-del="${r.id}" title="O'chirish">🗑</button>
         </div></td>
       </tr>
     `).join("");
@@ -749,7 +749,7 @@ async function loadAdPhones() {
 }
 
 function openPhoneForm(phone) {
-  document.getElementById("phoneFormTitle").textContent = phone ? "Edit Phone" : "Add Phone";
+  document.getElementById("phoneFormTitle").textContent = phone ? "Raqamni tahrirlash" : "Raqam qo'shish";
   document.getElementById("pfId").value = phone ? phone.id : "";
   document.getElementById("pfPhone").value = phone ? normalizeDigits(phone.phone_number).replace(/(\d{2})(\d{3})(\d{2})(\d{2})/, "$1 $2 $3 $4") : "";
   document.getElementById("pfName").value = phone ? (phone.owner_name || "") : "";
@@ -819,7 +819,7 @@ async function loadAdUsers() {
           </select>
         </td>
         <td>${u.status === "ACTIVE" ? badgeHtml("CONNECTED").replace("CONNECTED","ACTIVE") : `<span class="badge neutral"><span class="dot"></span>${escapeHtml(u.status || "-")}</span>`}</td>
-        <td><button class="icon-btn" data-editu="${u.id}" title="Edit">✎</button></td>
+        <td><button class="icon-btn" data-editu="${u.id}" title="Tahrirlash">✎</button></td>
       </tr>
     `).join("");
 
