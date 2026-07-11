@@ -604,7 +604,7 @@ function initAdminApp() {
       if (btn.dataset.view === "adDashboard") loadAdminDashboard();
       if (btn.dataset.view === "adPhones") loadAdPhones();
       if (btn.dataset.view === "adUsers") loadAdUsers();
-      if (btn.dataset.view === "adHistory") loadAdHistory();
+      if (btn.dataset.view === "adHistory") { loadAdHistory(); loadAdHistPhoneOptions(); }
     });
   });
 
@@ -623,6 +623,8 @@ function initAdminApp() {
     document.getElementById("adHistFrom").value = "";
     document.getElementById("adHistTo").value = "";
     document.getElementById("adHistStatus").value = "";
+    document.getElementById("adHistPhoneSearch").value = "";
+    document.getElementById("adHistDispatcherId").value = "";
     adHistPage = 0; loadAdHistory();
   });
   document.getElementById("adDeleteHistBtn").addEventListener("click", async () => {
@@ -800,15 +802,31 @@ async function deletePhoneConfirm(id) {
 }
 
 /* ---------- Admin: Users Management ---------- */
+let adUsersPage = 0;
+let adUsersFullList = [];
+
 async function loadAdUsers() {
   const tbody = document.getElementById("adUsersBody");
   tbody.innerHTML = `<tr><td colspan="6" class="muted">Yuklanmoqda...</td></tr>`;
   try {
     const res = await api.listUsers({ search: document.getElementById("adUserSearch").value.trim() });
-    const list = Array.isArray(res) ? res : (res.content || []);
-    tbody.innerHTML = list.map((u, i) => `
+    adUsersFullList = Array.isArray(res) ? res : (res.content || []);
+    adUsersPage = 0;
+    renderAdUsersPage();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" class="muted">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function renderAdUsersPage() {
+  const tbody = document.getElementById("adUsersBody");
+  const totalPages = Math.max(1, Math.ceil(adUsersFullList.length / AD_PAGE_SIZE));
+  const start = adUsersPage * AD_PAGE_SIZE;
+  const list = adUsersFullList.slice(start, start + AD_PAGE_SIZE);
+
+  tbody.innerHTML = list.map((u, i) => `
       <tr>
-        <td>${i + 1}</td>
+        <td>${start + i + 1}</td>
         <td>${escapeHtml(`${u.first_name || ""} ${u.last_name || ""}`.trim())}</td>
         <td>${escapeHtml(u.email || "-")}</td>
         <td>
@@ -821,39 +839,58 @@ async function loadAdUsers() {
         <td>${u.status === "ACTIVE" ? badgeHtml("CONNECTED").replace("CONNECTED","ACTIVE") : `<span class="badge neutral"><span class="dot"></span>${escapeHtml(u.status || "-")}</span>`}</td>
         <td><button class="icon-btn" data-editu="${u.id}" title="Tahrirlash">✎</button></td>
       </tr>
-    `).join("");
+    `).join("") || `<tr><td colspan="6" class="muted">Foydalanuvchi topilmadi.</td></tr>`;
 
-    tbody.querySelectorAll(".role-select").forEach((sel) => {
-      sel.addEventListener("change", async () => {
-        try { await api.changeUserRole(sel.dataset.uid, sel.value); }
-        catch (err) { alert(err.message || "Rolni o'zgartirib bo'lmadi."); loadAdUsers(); }
-      });
+  tbody.querySelectorAll(".role-select").forEach((sel) => {
+    sel.addEventListener("change", async () => {
+      try { await api.changeUserRole(sel.dataset.uid, sel.value); }
+      catch (err) { alert(err.message || "Rolni o'zgartirib bo'lmadi."); loadAdUsers(); }
     });
-    tbody.querySelectorAll("[data-editu]").forEach((b) => {
-      b.addEventListener("click", async () => {
-        const u = list.find((x) => x.id == b.dataset.editu);
-        const firstName = prompt("Ism:", u.first_name || "");
-        if (firstName === null) return;
-        const lastName = prompt("Familiya:", u.last_name || "");
-        if (lastName === null) return;
-        try { await api.updateUserByAdmin(u.id, { first_name: firstName, last_name: lastName, email: u.email }); loadAdUsers(); }
-        catch (err) { alert(err.message || "Saqlab bo'lmadi."); }
-      });
+  });
+  tbody.querySelectorAll("[data-editu]").forEach((b) => {
+    b.addEventListener("click", async () => {
+      const u = adUsersFullList.find((x) => x.id == b.dataset.editu);
+      const firstName = prompt("Ism:", u.first_name || "");
+      if (firstName === null) return;
+      const lastName = prompt("Familiya:", u.last_name || "");
+      if (lastName === null) return;
+      try { await api.updateUserByAdmin(u.id, { first_name: firstName, last_name: lastName, email: u.email }); loadAdUsers(); }
+      catch (err) { alert(err.message || "Saqlab bo'lmadi."); }
     });
-  } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" class="muted">${escapeHtml(err.message)}</td></tr>`;
-  }
+  });
+
+  renderPager(document.getElementById("adUsersPager"), adUsersPage, totalPages, (p) => { adUsersPage = p; renderAdUsersPage(); });
 }
 
 /* ---------- Admin: Call History ---------- */
+let adHistPhoneMap = {}; // "+998 90 123 45 67" -> phoneId
+
+async function loadAdHistPhoneOptions() {
+  try {
+    const res = await api.listPhones({ page: 0, size: 200 });
+    adHistPhoneMap = {};
+    const datalist = document.getElementById("adHistPhoneDatalist");
+    datalist.innerHTML = (res.content || []).map((p) => {
+      const label = formatPhoneDisplay(p.phone_number);
+      adHistPhoneMap[label] = p.id;
+      return `<option value="${label}">`;
+    }).join("");
+  } catch (_) {}
+}
+
 async function loadAdHistory() {
   const tbody = document.getElementById("adHistoryBody");
-  tbody.innerHTML = `<tr><td colspan="7" class="muted">Yuklanmoqda...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda...</td></tr>`;
   try {
+    const phoneTyped = document.getElementById("adHistPhoneSearch").value.trim();
+    const phoneId = adHistPhoneMap[phoneTyped] || "";
+    const dispatcherId = document.getElementById("adHistDispatcherId").value.trim();
+
     const res = await api.listCallHistory({
       status: document.getElementById("adHistStatus").value,
       fromDate: document.getElementById("adHistFrom").value,
       toDate: document.getElementById("adHistTo").value,
+      phoneId, dispatcherId,
       page: adHistPage, size: AD_PAGE_SIZE,
     });
     const content = res.content || [];
@@ -862,10 +899,30 @@ async function loadAdHistory() {
         <td>${adHistPage * AD_PAGE_SIZE + i + 1}</td><td>${fmtDate(h.call_date)}</td>
         <td class="phone-mono">${formatPhoneDisplay(h.phone_number)}</td><td>${escapeHtml(h.dispatcher || "-")}</td>
         <td>${badgeHtml(h.status)}</td><td>${h.duration ?? 0}s</td><td>${escapeHtml(h.description || "-")}</td>
+        <td><button class="btn-ghost btn-xs" data-histdetail="${h.id}">Batafsil</button></td>
       </tr>
-    `).join("") || `<tr><td colspan="7" class="muted">Tarix topilmadi.</td></tr>`;
+    `).join("") || `<tr><td colspan="8" class="muted">Tarix topilmadi.</td></tr>`;
+
+    tbody.querySelectorAll("[data-histdetail]").forEach((b) => {
+      b.addEventListener("click", () => openHistDetails(content.find((x) => x.id == b.dataset.histdetail)));
+    });
+
     renderPager(document.getElementById("adHistoryPager"), adHistPage, res.total_pages || 1, (p) => { adHistPage = p; loadAdHistory(); });
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="muted">${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="muted">${escapeHtml(err.message)}</td></tr>`;
   }
 }
+
+function openHistDetails(h) {
+  if (!h) return;
+  document.getElementById("histDetailsBody").innerHTML = `
+    <div class="details-row"><span class="dr-label">Telefon raqami</span><span class="dr-value">${formatPhoneDisplay(h.phone_number)}</span></div>
+    <div class="details-row"><span class="dr-label">Dispetcher</span><span class="dr-value">${escapeHtml(h.dispatcher || "-")}</span></div>
+    <div class="details-row"><span class="dr-label">Holat</span><span class="dr-value">${badgeHtml(h.status)}</span></div>
+    <div class="details-row"><span class="dr-label">Davomiyligi</span><span class="dr-value">${h.duration ?? 0}s</span></div>
+    <div class="details-row"><span class="dr-label">Sana va vaqt</span><span class="dr-value">${fmtDate(h.call_date)}</span></div>
+    <div class="details-row"><span class="dr-label">Izoh</span><span class="dr-value">${escapeHtml(h.description || "-")}</span></div>
+  `;
+  openModal("histDetailsModal");
+}
+document.getElementById("histDetailsCloseBtn").addEventListener("click", () => closeModal("histDetailsModal"));
