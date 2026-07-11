@@ -366,6 +366,7 @@
             <tbody id="adUsersBody"></tbody>
           </table>
         </div>
+        <div class="pager" id="adUsersPager"></div>
       </div>
     </div>
 
@@ -373,6 +374,11 @@
     <div id="adHistoryView" class="op-view is-hidden">
       <div class="panel filters-panel">
         <div class="filters-row">
+          <label class="field-inline"><span>Telefon raqami</span>
+            <input type="text" id="adHistPhoneSearch" list="adHistPhoneDatalist" placeholder="Raqam tanlang yoki yozing" autocomplete="off">
+            <datalist id="adHistPhoneDatalist"></datalist>
+          </label>
+          <label class="field-inline"><span>Dispetcher ID</span><input type="number" id="adHistDispatcherId" placeholder="Masalan: 3"></label>
           <label class="field-inline"><span>Dan</span><input type="date" id="adHistFrom"></label>
           <label class="field-inline"><span>Gacha</span><input type="date" id="adHistTo"></label>
           <label class="field-inline"><span>Holat</span>
@@ -391,7 +397,7 @@
       <div class="panel table-panel">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>#</th><th>Sana va vaqt</th><th>Raqam</th><th>Dispetcher</th><th>Holat</th><th>Davomiyligi</th><th>Izoh</th></tr></thead>
+            <thead><tr><th>#</th><th>Sana va vaqt</th><th>Raqam</th><th>Dispetcher</th><th>Holat</th><th>Davomiyligi</th><th>Izoh</th><th>Amallar</th></tr></thead>
             <tbody id="adHistoryBody"></tbody>
           </table>
         </div>
@@ -472,6 +478,17 @@
       <p id="updateError" class="auth-error is-hidden"></p>
       <button type="submit" class="btn-primary btn-full">Save</button>
     </form>
+  </div>
+</div>
+
+<!-- Call History Details modal -->
+<div id="histDetailsModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Qo'ng'iroq tafsilotlari</h3><button class="icon-btn js-close" data-modal="histDetailsModal">&times;</button></div>
+    <div id="histDetailsBody" class="details-body"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="histDetailsCloseBtn">Yopish</button>
+    </div>
   </div>
 </div>
 
