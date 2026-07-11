@@ -3,7 +3,7 @@
    ========================================================================= */
 
 const API_BASE_URL = ""; // Vercel serverless proksi orqali (/api/[...path].js)
-const WS_URL = "http://178.104.182.81:8082/ws"; // <-- backend WebSocket manzili
+const WS_URL = "http://178.104.182.81:8082/ws"; // <-- backend WebSocket manzilini shu yerga yozing, masalan: "wss://178.104.182.81:8082/ws"
 
 let ws = null;
 let phoneLockMap = {}; // phoneId -> {locked, operatorId, operatorName}
@@ -60,6 +60,16 @@ const STATUS_META = {
   FINISHED: { label: "Yakunlangan", color: "ok" },
 };
 const STATUS_LIST = Object.keys(STATUS_META);
+
+const USER_STATUS_META = {
+  ACTIVE: { label: "Faol", color: "ok" },
+  UNVERIFIED: { label: "Tasdiqlanmagan", color: "warn" },
+  BLOCKED: { label: "Bloklangan", color: "danger" },
+};
+function userStatusBadge(status) {
+  const m = USER_STATUS_META[status] || { label: status || "-", color: "neutral" };
+  return `<span class="badge ${m.color}"><span class="dot"></span>${m.label}</span>`;
+}
 
 /* ------------------------------ Holat ---------------------------------- */
 let accessToken = null;
@@ -898,7 +908,7 @@ function renderAdUsersPage() {
             <option value="SUPER_USER" ${u.role === "SUPER_USER" ? "selected" : ""}>SUPER_USER</option>
           </select>
         </td>
-        <td>${u.status === "ACTIVE" ? badgeHtml("CONNECTED").replace("CONNECTED","ACTIVE") : `<span class="badge neutral"><span class="dot"></span>${escapeHtml(u.status || "-")}</span>`}</td>
+        <td>${userStatusBadge(u.status)}</td>
         <td><button class="icon-btn" data-editu="${u.id}" title="Tahrirlash">✎</button></td>
       </tr>
     `).join("") || `<tr><td colspan="6" class="muted">Foydalanuvchi topilmadi.</td></tr>`;
