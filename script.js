@@ -49,7 +49,6 @@ const UZ_MOBILE_PREFIXES = ["90","91","93","94","95","97","98","99","33","88","2
 
 const STATUS_META = {
   NEW: { label: "Yangi", color: "neutral" },
-  IN_PROGRESS: { label: "Jarayonda", color: "accent" },
   CONNECTED: { label: "Bog'landi", color: "ok" },
   NO_ANSWER: { label: "Ko'tarilmadi", color: "warn" },
   BUSY: { label: "Band", color: "warn" },
@@ -130,6 +129,10 @@ const api = {
   },
   updateUserByAdmin: (id, payload) => apiFetch(`/api/users/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   changeUserRole: (userId, role) => apiFetch(`/api/users/role?role=${role}&userId=${userId}`, { method: "PATCH" }),
+  changeUserStatus: (userId, status) => apiFetch(`/api/users/${userId}/status?status=${status}`, { method: "PATCH" }),
+  deleteUser: (userId) => apiFetch(`/api/users/${userId}`, { method: "DELETE" }),
+  getPhoneStatistics: () => apiFetch("/api/phones/statistics"),
+  getCallHistoryStatistics: () => apiFetch("/api/call-history/statistics"),
 
   listPhones: ({ search = "", status = "", page = 0, size = 10 } = {}) => {
     const q = new URLSearchParams();
@@ -140,9 +143,9 @@ const api = {
   },
   createPhone: (payload) => apiFetch("/api/phones", { method: "POST", body: JSON.stringify(payload) }),
   updatePhone: (id, payload) => apiFetch(`/api/phones/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
-  updateOperatorPhone: (id, payload) => {
-    const q = new URLSearchParams({ status: payload.status });
-    return apiFetch(`/api/phones/${id}/operator?${q.toString()}`, { method: "PATCH", body: JSON.stringify(payload) });
+  updateOperatorPhone: (id, status, body) => {
+    const q = new URLSearchParams({ status });
+    return apiFetch(`/api/phones/${id}/operator?${q.toString()}`, { method: "PATCH", body: JSON.stringify(body) });
   },
   takePhone: (id) => apiFetch(`/api/phones/${id}/take`, { method: "POST" }),
   unlockPhone: (id) => apiFetch(`/api/phones/unlock/${id}`, { method: "PATCH" }),
@@ -610,7 +613,7 @@ async function doTake(id, phone) {
 function openUpdateModal(phone) {
   document.getElementById("uId").value = phone.id;
   document.getElementById("updatePhoneLabel").textContent = formatPhoneDisplay(phone.phone_number);
-  document.getElementById("uStatus").value = phone.status && STATUS_LIST.includes(phone.status) ? phone.status : "IN_PROGRESS";
+  document.getElementById("uStatus").value = phone.status && STATUS_LIST.includes(phone.status) ? phone.status : "NEW";
   document.getElementById("uDescription").value = "";
   document.getElementById("updateError").classList.add("is-hidden");
   openModal("updateModal");
@@ -622,8 +625,7 @@ document.getElementById("updateForm").addEventListener("submit", async (e) => {
   err.classList.add("is-hidden");
   const id = document.getElementById("uId").value;
   try {
-    await api.updateOperatorPhone(id, {
-      status: document.getElementById("uStatus").value,
+    await api.updateOperatorPhone(id, document.getElementById("uStatus").value, {
       description: document.getElementById("uDescription").value.trim(),
     });
     closeModal("updateModal");
@@ -802,37 +804,48 @@ async function loadAdminDashboard() {
   const grid = document.getElementById("adStatGrid");
   grid.innerHTML = `<div class="stat-card"><div class="stat-label">Yuklanmoqda...</div></div>`;
   try {
-    const [phonesRes, usersRes, historyRes] = await Promise.all([
-      api.listPhones({ page: 0, size: 100 }),
+    const [phoneStats, callStats, usersRes] = await Promise.all([
+      api.getPhoneStatistics(),
+      api.getCallHistoryStatistics(),
       api.listUsers({}).catch(() => []),
-      api.listCallHistory({ size: 100 }).catch(() => ({ content: [] })),
     ]);
-
-    const phones = phonesRes.content || [];
     const usersArr = Array.isArray(usersRes) ? usersRes : (usersRes.content || []);
-    const totalPhones = phonesRes.total_elements ?? phones.length;
-
-    const counts = {};
-    STATUS_LIST.forEach((s) => (counts[s] = 0));
-    phones.forEach((p) => { if (counts[p.status] !== undefined) counts[p.status]++; });
 
     grid.innerHTML = `
-      <div class="stat-card"><div class="stat-label">Jami raqamlar</div><div class="stat-value">${totalPhones}</div></div>
+      <div class="stat-card"><div class="stat-label">Jami raqamlar</div><div class="stat-value">${phoneStats.total ?? 0}</div></div>
       <div class="stat-card purple"><div class="stat-label">Jami foydalanuvchilar</div><div class="stat-value">${usersArr.length}</div></div>
-      <div class="stat-card accent"><div class="stat-label">Jarayonda</div><div class="stat-value">${counts.IN_PROGRESS}</div></div>
-      <div class="stat-card ok"><div class="stat-label">Bog'landi</div><div class="stat-value">${counts.CONNECTED}</div></div>
-      <div class="stat-card warn"><div class="stat-label">Band</div><div class="stat-value">${counts.BUSY}</div></div>
-      <div class="stat-card warn"><div class="stat-label">Ko'tarilmadi</div><div class="stat-value">${counts.NO_ANSWER}</div></div>
-      <div class="stat-card purple"><div class="stat-label">Qayta aloqa</div><div class="stat-value">${counts.CALLBACK_REQUIRED}</div></div>
+      <div class="stat-card neutral"><div class="stat-label">Yangi</div><div class="stat-value">${phoneStats.new_phones ?? 0}</div></div>
+      <div class="stat-card ok"><div class="stat-label">Bog'landi</div><div class="stat-value">${phoneStats.connected ?? 0}</div></div>
+      <div class="stat-card warn"><div class="stat-label">Band</div><div class="stat-value">${phoneStats.busy ?? 0}</div></div>
+      <div class="stat-card warn"><div class="stat-label">Ko'tarilmadi</div><div class="stat-value">${phoneStats.no_answer ?? 0}</div></div>
+      <div class="stat-card purple"><div class="stat-label">Qayta aloqa</div><div class="stat-value">${phoneStats.callback_required ?? 0}</div></div>
+      <div class="stat-card danger"><div class="stat-label">Qora ro'yxatda</div><div class="stat-value">${phoneStats.blacklisted ?? 0}</div></div>
     `;
 
-    renderDonut("adPhoneDonut", "adPhoneLegend", counts);
+    const phoneCounts = {
+      NEW: phoneStats.new_phones ?? 0,
+      CONNECTED: phoneStats.connected ?? 0,
+      NO_ANSWER: phoneStats.no_answer ?? 0,
+      BUSY: phoneStats.busy ?? 0,
+      CALLBACK_REQUIRED: phoneStats.callback_required ?? 0,
+      WRONG_NUMBER: phoneStats.wrong_number ?? 0,
+      NOT_INTERESTED: phoneStats.not_interested ?? 0,
+      BLACKLISTED: phoneStats.blacklisted ?? 0,
+      FINISHED: phoneStats.finished ?? 0,
+    };
+    renderDonut("adPhoneDonut", "adPhoneLegend", phoneCounts);
 
-    const histContent = historyRes.content || [];
-    const hCounts = {};
-    STATUS_LIST.forEach((s) => (hCounts[s] = 0));
-    histContent.forEach((h) => { if (hCounts[h.status] !== undefined) hCounts[h.status]++; });
-    renderDonut("adCallDonut", "adCallLegend", hCounts);
+    const callCounts = {
+      CONNECTED: callStats.connected ?? 0,
+      NO_ANSWER: callStats.no_answer ?? 0,
+      BUSY: callStats.busy ?? 0,
+      CALLBACK_REQUIRED: callStats.callback_required ?? 0,
+      WRONG_NUMBER: callStats.wrong_number ?? 0,
+      NOT_INTERESTED: callStats.not_interested ?? 0,
+      BLACKLISTED: callStats.blacklisted ?? 0,
+      FINISHED: callStats.finished ?? 0,
+    };
+    renderDonut("adCallDonut", "adCallLegend", callCounts);
   } catch (err) {
     grid.innerHTML = `<div class="stat-card"><div class="stat-label">${escapeHtml(err.message)}</div></div>`;
   }
@@ -977,15 +990,30 @@ function renderAdUsersPage() {
             <option value="SUPER_USER" ${u.role === "SUPER_USER" ? "selected" : ""}>SUPER_USER</option>
           </select>
         </td>
-        <td>${userStatusBadge(u.status)}</td>
-        <td><button class="icon-btn" data-editu="${u.id}" title="Tahrirlash">✎</button></td>
+        <td>
+          <select class="select-compact status-select" data-uid="${u.id}" style="padding:5px 24px 5px 8px;font-size:12px;">
+            <option value="ACTIVE" ${u.status === "ACTIVE" ? "selected" : ""}>Faol</option>
+            <option value="UNVERIFIED" ${u.status === "UNVERIFIED" ? "selected" : ""}>Tasdiqlanmagan</option>
+            <option value="BLOCKED" ${u.status === "BLOCKED" ? "selected" : ""}>Bloklangan</option>
+          </select>
+        </td>
+        <td><div class="row-actions">
+          <button class="icon-btn" data-editu="${u.id}" title="Tahrirlash">✎</button>
+          <button class="icon-btn" data-delu="${u.id}" title="O'chirish">🗑</button>
+        </div></td>
       </tr>
     `).join("") || `<tr><td colspan="6" class="muted">Foydalanuvchi topilmadi.</td></tr>`;
 
   tbody.querySelectorAll(".role-select").forEach((sel) => {
     sel.addEventListener("change", async () => {
-      try { await api.changeUserRole(sel.dataset.uid, sel.value); }
+      try { await api.changeUserRole(sel.dataset.uid, sel.value); showToast("Rol yangilandi.", "ok"); }
       catch (err) { showToast(err.message || "Rolni o'zgartirib bo'lmadi."); loadAdUsers(); }
+    });
+  });
+  tbody.querySelectorAll(".status-select").forEach((sel) => {
+    sel.addEventListener("change", async () => {
+      try { await api.changeUserStatus(sel.dataset.uid, sel.value); showToast("Holat yangilandi.", "ok"); }
+      catch (err) { showToast(err.message || "Holatni o'zgartirib bo'lmadi."); loadAdUsers(); }
     });
   });
   tbody.querySelectorAll("[data-editu]").forEach((b) => {
@@ -997,6 +1025,14 @@ function renderAdUsersPage() {
       if (lastName === null) return;
       try { await api.updateUserByAdmin(u.id, { first_name: firstName, last_name: lastName, email: u.email }); loadAdUsers(); }
       catch (err) { showToast(err.message || "Saqlab bo'lmadi."); }
+    });
+  });
+  tbody.querySelectorAll("[data-delu]").forEach((b) => {
+    b.addEventListener("click", async () => {
+      const ok = await showConfirm("Bu foydalanuvchini butunlay o'chirmoqchimisiz?", "Foydalanuvchini o'chirish");
+      if (!ok) return;
+      try { await api.deleteUser(b.dataset.delu); loadAdUsers(); }
+      catch (err) { showToast(err.message || "O'chirib bo'lmadi."); }
     });
   });
 
