@@ -184,6 +184,29 @@ function escapeHtml(str) {
   div.textContent = str == null ? "" : String(str);
   return div.innerHTML;
 }
+
+/* ---------- Toast bildirishnoma (alert() o'rniga) ---------- */
+let toastContainer = null;
+function showToast(message, type = "danger") {
+  if (!toastContainer) {
+    toastContainer = document.createElement("div");
+    toastContainer.id = "toastContainer";
+    toastContainer.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:center;";
+    document.body.appendChild(toastContainer);
+  }
+  const el = document.createElement("div");
+  const bg = type === "ok" ? "var(--ok-bg)" : "var(--danger-bg)";
+  const color = type === "ok" ? "var(--ok)" : "var(--danger)";
+  const border = type === "ok" ? "rgba(53,200,138,0.35)" : "rgba(255,84,112,0.35)";
+  el.style.cssText = `background:${bg};color:${color};border:1px solid ${border};padding:10px 16px;border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;box-shadow:0 10px 30px -6px rgba(0,0,0,.5);opacity:0;transform:translateY(8px);transition:all .2s ease;max-width:90vw;`;
+  el.textContent = message;
+  toastContainer.appendChild(el);
+  requestAnimationFrame(() => { el.style.opacity = "1"; el.style.transform = "translateY(0)"; });
+  setTimeout(() => {
+    el.style.opacity = "0"; el.style.transform = "translateY(8px)";
+    setTimeout(() => el.remove(), 250);
+  }, 3200);
+}
 function getUserFullName(u) {
   if (!u) return "-";
   // Backend turli field nomlarida qaytarishi mumkin — hammasini sinab ko'ramiz
@@ -541,7 +564,7 @@ async function doTake(id, phone) {
     openUpdateModal(phone || { id, phone_number: "" });
     loadOpMyActiveBanner();
   } catch (err) {
-    alert(err.message || "Band qilib bo'lmadi.");
+    showToast(err.message || "Band qilib bo'lmadi.");
   }
 }
 
@@ -601,7 +624,7 @@ async function loadOpActive() {
     document.getElementById("apContinueBtn").addEventListener("click", () => openUpdateModal(r));
     document.getElementById("apReleaseBtn").addEventListener("click", async () => {
       try { await api.unlockPhone(r.id); myActivePhoneId = null; loadOpActive(); loadOpMyActiveBanner(); }
-      catch (err) { alert(err.message || "Bo'shatib bo'lmadi."); }
+      catch (err) { showToast(err.message || "Bo'shatib bo'lmadi."); }
     });
   } catch (err) {
     card.innerHTML = `<p class="muted">${escapeHtml(err.message)}</p>`;
@@ -699,10 +722,10 @@ function initAdminApp() {
   });
   document.getElementById("adDeleteHistBtn").addEventListener("click", async () => {
     const d = document.getElementById("adDeleteUpTo").value;
-    if (!d) return alert("Sana tanlang.");
+    if (!d) return showToast("Sana tanlang.");
     if (!confirm(`${d} sanasigacha bo'lgan tarix butunlay o'chiriladi. Davom etasizmi?`)) return;
     try { await api.deleteHistoryBeforeDate(d); loadAdHistory(); }
-    catch (err) { alert(err.message || "O'chirib bo'lmadi."); }
+    catch (err) { showToast(err.message || "O'chirib bo'lmadi."); }
   });
 
   document.getElementById("adUnlockBtn").addEventListener("click", async () => {
@@ -870,7 +893,7 @@ document.getElementById("pfDeleteBtn").addEventListener("click", () => {
 async function deletePhoneConfirm(id) {
   if (!confirm("Bu raqamni o'chirmoqchimisiz?")) return;
   try { await api.deletePhone(id); loadAdPhones(); }
-  catch (err) { alert(err.message || "O'chirib bo'lmadi."); }
+  catch (err) { showToast(err.message || "O'chirib bo'lmadi."); }
 }
 
 /* ---------- Admin: Users Management ---------- */
@@ -916,7 +939,7 @@ function renderAdUsersPage() {
   tbody.querySelectorAll(".role-select").forEach((sel) => {
     sel.addEventListener("change", async () => {
       try { await api.changeUserRole(sel.dataset.uid, sel.value); }
-      catch (err) { alert(err.message || "Rolni o'zgartirib bo'lmadi."); loadAdUsers(); }
+      catch (err) { showToast(err.message || "Rolni o'zgartirib bo'lmadi."); loadAdUsers(); }
     });
   });
   tbody.querySelectorAll("[data-editu]").forEach((b) => {
@@ -927,7 +950,7 @@ function renderAdUsersPage() {
       const lastName = prompt("Familiya:", u.last_name || "");
       if (lastName === null) return;
       try { await api.updateUserByAdmin(u.id, { first_name: firstName, last_name: lastName, email: u.email }); loadAdUsers(); }
-      catch (err) { alert(err.message || "Saqlab bo'lmadi."); }
+      catch (err) { showToast(err.message || "Saqlab bo'lmadi."); }
     });
   });
 
