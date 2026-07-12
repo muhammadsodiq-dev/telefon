@@ -235,6 +235,18 @@ tbody tr:hover{ background:rgba(255,255,255,.02); }
 }
 .import-result .ir-row{ display:flex; justify-content:space-between; }
 
+.combo{ position:relative; }
+.combo-list{
+  position:absolute; z-index:30; top:calc(100% + 4px); left:0; right:0;
+  background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  max-height:220px; overflow-y:auto; display:none;
+  box-shadow:0 10px 30px -6px rgba(0,0,0,.5);
+}
+.combo-list.open{ display:block; }
+.combo-item{ padding:8px 12px; cursor:pointer; font-size:13px; color:var(--text); }
+.combo-item:hover, .combo-item.active{ background:var(--surface-2); color:var(--accent); }
+.combo-item.empty{ color:var(--text-faint); }
+
 .danger-zone-panel{ margin-top:16px; border-color:rgba(255,84,112,0.35); }
 .danger-zone-title{ font-size:14px; font-weight:600; color:var(--danger); margin-bottom:6px; }
 
