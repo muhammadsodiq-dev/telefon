@@ -1055,7 +1055,14 @@ async function deletePhoneConfirm(id) {
   const ok = await showConfirm("Bu raqamni o'chirmoqchimisiz?", "Raqamni o'chirish");
   if (!ok) return;
   try { await api.deletePhone(id); loadAdPhones(); }
-  catch (err) { showToast(err.message || "O'chirib bo'lmadi."); }
+  catch (err) {
+    const msg = (err.message || "").toLowerCase();
+    if (msg.includes("call history") || msg.includes("foreign key") || msg.includes("constraint")) {
+      showToast("Bu raqamda qo'ng'iroqlar tarixi mavjud, shuning uchun o'chirib bo'lmaydi.");
+    } else {
+      showToast(err.message || "O'chirib bo'lmadi.");
+    }
+  }
 }
 
 /* ---------- Admin: Users Management ---------- */
@@ -1179,6 +1186,7 @@ document.getElementById("userFormForm").addEventListener("submit", async (e) => 
 
 /* ---------- Admin: Call History ---------- */
 let adHistPhoneMap = {}; // "+998 90 123 45 67" -> phoneId
+let adHistDispatcherMap = {}; // "Ism Familiya" -> userId
 
 async function loadAdHistPhoneOptions() {
   try {
@@ -1191,6 +1199,18 @@ async function loadAdHistPhoneOptions() {
       return `<option value="${label}">`;
     }).join("");
   } catch (_) {}
+
+  try {
+    const usersRes = await api.listUsers({});
+    const usersArr = Array.isArray(usersRes) ? usersRes : (usersRes.content || []);
+    adHistDispatcherMap = {};
+    const dList = document.getElementById("adHistDispatcherDatalist");
+    dList.innerHTML = usersArr.map((u) => {
+      const label = getUserFullName(u);
+      adHistDispatcherMap[label] = u.id;
+      return `<option value="${label}">`;
+    }).join("");
+  } catch (_) {}
 }
 
 async function exportHistoryToExcel() {
@@ -1198,7 +1218,8 @@ async function exportHistoryToExcel() {
   try {
     const phoneTyped = document.getElementById("adHistPhoneSearch").value.trim();
     const phoneId = adHistPhoneMap[phoneTyped] || "";
-    const dispatcherId = document.getElementById("adHistDispatcherId").value.trim();
+    const dispatcherTyped = document.getElementById("adHistDispatcherId").value.trim();
+    const dispatcherId = adHistDispatcherMap[dispatcherTyped] || "";
     const baseParams = {
       status: document.getElementById("adHistStatus").value,
       fromDate: document.getElementById("adHistFrom").value,
@@ -1251,7 +1272,8 @@ async function loadAdHistory() {
   try {
     const phoneTyped = document.getElementById("adHistPhoneSearch").value.trim();
     const phoneId = adHistPhoneMap[phoneTyped] || "";
-    const dispatcherId = document.getElementById("adHistDispatcherId").value.trim();
+    const dispatcherTyped = document.getElementById("adHistDispatcherId").value.trim();
+    const dispatcherId = adHistDispatcherMap[dispatcherTyped] || "";
 
     const res = await api.listCallHistory({
       status: document.getElementById("adHistStatus").value,
@@ -1281,7 +1303,14 @@ async function loadAdHistory() {
         const ok = await showConfirm("Bu telefon raqamini butunlay o'chirmoqchimisiz?", "Raqamni o'chirish");
         if (!ok) return;
         try { await api.deletePhone(b.dataset.delphone); showToast("Raqam o'chirildi.", "ok"); loadAdHistory(); }
-        catch (err) { showToast(err.message || "O'chirib bo'lmadi."); }
+        catch (err) {
+          const msg = (err.message || "").toLowerCase();
+          if (msg.includes("call history") || msg.includes("foreign key") || msg.includes("constraint")) {
+            showToast("Bu raqamda qo'ng'iroqlar tarixi mavjud, shuning uchun o'chirib bo'lmaydi. Avval \"Qo'ng'iroqlar tarixi\"da shu raqam bo'yicha yozuvlarni tozalang (yoki backend jamoasidan cascade delete so'rang).");
+          } else {
+            showToast(err.message || "O'chirib bo'lmadi.");
+          }
+        }
       });
     });
 
