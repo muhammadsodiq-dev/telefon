@@ -1,3 +1,14 @@
+// Vercel Serverless Function — barcha /api/* so'rovlarini backendga
+// xom (raw) baytlar holida, hech narsani o'zgartirmasdan uzatadi.
+// Bu usul JSON so'rovlar uchun ham, fayl yuklash (multipart/form-data)
+// uchun ham ishonchli ishlaydi.
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 const BACKEND_BASE = "http://178.104.182.81:8082";
 
 export default async function handler(req, res) {
@@ -11,18 +22,25 @@ export default async function handler(req, res) {
     headers[key] = value;
   }
 
+  let bodyBuffer;
+  if (!["GET", "HEAD"].includes(req.method)) {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    bodyBuffer = Buffer.concat(chunks);
+  }
+
   try {
     const backendRes = await fetch(targetUrl, {
       method: req.method,
       headers,
-      body: ["GET", "HEAD"].includes(req.method) ? undefined : JSON.stringify(req.body),
+      body: bodyBuffer,
     });
 
-    const text = await backendRes.text();
+    const arrayBuffer = await backendRes.arrayBuffer();
     res.status(backendRes.status);
     const contentType = backendRes.headers.get("content-type");
     if (contentType) res.setHeader("content-type", contentType);
-    res.send(text);
+    res.send(Buffer.from(arrayBuffer));
   } catch (err) {
     res.status(502).json({ message: "Backendga ulanib bo'lmadi", error: String(err) });
   }
