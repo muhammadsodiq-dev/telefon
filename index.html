@@ -265,15 +265,24 @@
             <div class="profile-email" id="opProfileEmail"></div>
           </div>
         </div>
-        <form id="opProfileForm">
+
+        <form id="opProfileNameForm">
           <div class="field-row">
             <label class="field"><span class="field-label">Ism</span><input type="text" id="opProfileFirstName" required></label>
             <label class="field"><span class="field-label">Familiya</span><input type="text" id="opProfileLastName" required></label>
           </div>
+          <p id="opProfileNameError" class="auth-error is-hidden"></p>
+          <p id="opProfileNameSuccess" class="auth-success is-hidden">Ism-familiya saqlandi!</p>
+          <button type="submit" class="btn-primary">Ism-familiyani saqlash</button>
+        </form>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
+
+        <form id="opProfileEmailForm">
           <label class="field"><span class="field-label">Email</span><input type="email" id="opProfileEmailInput" required></label>
-          <p id="opProfileError" class="auth-error is-hidden"></p>
-          <p id="opProfileSuccess" class="auth-success is-hidden">Saqlandi!</p>
-          <button type="submit" class="btn-primary">Saqlash</button>
+          <p id="opProfileEmailError" class="auth-error is-hidden"></p>
+          <p id="opProfileEmailSuccess" class="auth-success is-hidden">Email yangilandi!</p>
+          <button type="submit" class="btn-secondary">Emailni yangilash</button>
         </form>
       </div>
     </div>
@@ -446,6 +455,23 @@
 <!-- ======================================================================
      UMUMIY MODALLAR
      ====================================================================== -->
+
+<!-- Edit User modal (admin) -->
+<div id="userFormModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Foydalanuvchini tahrirlash</h3><button class="icon-btn js-close" data-modal="userFormModal">&times;</button></div>
+    <form id="userFormForm">
+      <input type="hidden" id="ufId">
+      <div class="field-row">
+        <label class="field"><span class="field-label">Ism</span><input type="text" id="ufFirstName" required></label>
+        <label class="field"><span class="field-label">Familiya</span><input type="text" id="ufLastName" required></label>
+      </div>
+      <label class="field"><span class="field-label">Email</span><input type="email" id="ufEmail" required></label>
+      <p id="userFormError" class="auth-error is-hidden"></p>
+      <button type="submit" class="btn-primary btn-full">Saqlash</button>
+    </form>
+  </div>
+</div>
 
 <!-- Umumiy tasdiqlash modali (browser confirm() o'rniga) -->
 <div id="confirmModal" class="modal-overlay">
