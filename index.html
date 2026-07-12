@@ -222,7 +222,7 @@
         <div class="table-scroll">
           <table>
             <thead><tr>
-              <th>#</th><th>Telefon raqami</th><th>Ism-familiya</th><th>Holat</th><th>Band holati</th><th></th>
+              <th>#</th><th>Telefon raqami</th><th>Ism-familiya</th><th>Oxirgi holat</th><th>Band holati</th><th></th>
             </tr></thead>
             <tbody id="opTableBody"></tbody>
           </table>
@@ -351,7 +351,7 @@
       <div class="panel table-panel">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>#</th><th>Telefon raqami</th><th>Ism-familiya</th><th>Holat</th><th>Band holati</th><th>Amallar</th></tr></thead>
+            <thead><tr><th>#</th><th>Telefon raqami</th><th>Ism-familiya</th><th>Oxirgi holat</th><th>Band holati</th><th>Amallar</th></tr></thead>
             <tbody id="adPhonesBody"></tbody>
           </table>
         </div>
@@ -400,6 +400,7 @@
           </label>
           <button class="btn-secondary" id="adHistApplyBtn">Filtrlash</button>
           <button class="btn-ghost" id="adHistResetBtn">Tozalash</button>
+          <button class="btn-ghost" id="adHistExportBtn">📥 Excelga yuklab olish</button>
         </div>
       </div>
 
@@ -437,16 +438,25 @@
 
     <!-- ---------- ADMIN: IMPORT PHONES ---------- -->
     <div id="adImportView" class="op-view is-hidden">
-      <h2 class="view-title">Raqam qo'shish</h2>
-      <div class="panel" style="max-width:480px;">
-        <p class="muted" style="margin-bottom:14px;">⚠️ Hozircha bitta-bittalab qo'shish qo'llab-quvvatlanadi (backendda ommaviy import endpointi yo'q).</p>
-        <label class="field"><span class="field-label">Telefon raqami</span>
-          <div class="phone-input-wrap"><span class="phone-prefix">+998</span><input type="text" id="adImportPhone" placeholder="90 123 45 67"></div>
-        </label>
-        <label class="field"><span class="field-label">Ism (ixtiyoriy)</span><input type="text" id="adImportName"></label>
+      <h2 class="view-title">Raqamlarni Excel orqali import qilish</h2>
+      <div class="panel" style="max-width:520px;">
+        <p class="muted" style="margin-bottom:14px;">
+          .xlsx yoki .xls fayl yuklang (maksimal 500 qator). Fayldagi ustun nomlari aynan
+          <strong>"Phone number"</strong> va <strong>"Owner name"</strong> bo'lishi kerak.
+          Dublikat raqamlar avtomatik o'tkazib yuboriladi.
+        </p>
+
+        <div id="importDropZone" class="import-drop-zone">
+          <input type="file" id="adImportFile" accept=".xlsx,.xls" style="display:none;">
+          <div class="import-drop-icon">📥</div>
+          <div id="importDropText">Faylni shu yerga tashlang yoki <span class="link-btn">tanlang</span></div>
+          <div id="importFileName" class="muted small" style="margin-top:6px;"></div>
+        </div>
+
         <p id="adImportError" class="auth-error is-hidden"></p>
-        <p id="adImportSuccess" class="auth-success is-hidden">Qo'shildi!</p>
-        <button class="btn-primary" id="adImportBtn">Qo'shish</button>
+        <div id="adImportResult" class="import-result is-hidden"></div>
+
+        <button class="btn-primary btn-full" id="adImportBtn" disabled style="margin-top:14px;">Import qilish</button>
       </div>
     </div>
   </main>
@@ -541,6 +551,7 @@
         <span class="field-error is-hidden" id="pfPhoneError">Noto'g'ri format.</span>
       </label>
       <label class="field"><span class="field-label">Ism (ixtiyoriy)</span><input type="text" id="pfName"></label>
+      <label class="field"><span class="field-label">Manzil / joylashuv (ixtiyoriy, maks. 30 belgi)</span><input type="text" id="pfLocation" maxlength="30" placeholder="Masalan: Chilonzor, Toshkent"></label>
       <p id="phoneFormError" class="auth-error is-hidden"></p>
       <div class="modal-actions">
         <button type="button" class="btn-danger is-hidden" id="pfDeleteBtn">O'chirish</button>
