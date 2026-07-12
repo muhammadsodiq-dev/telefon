@@ -705,22 +705,43 @@ function loadOpProfile() {
   document.getElementById("opProfileLastName").value = currentUser.last_name || "";
   document.getElementById("opProfileEmailInput").value = currentUser.email || "";
 }
-document.getElementById("opProfileForm").addEventListener("submit", async (e) => {
+document.getElementById("opProfileNameForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const err = document.getElementById("opProfileError");
-  const ok = document.getElementById("opProfileSuccess");
+  const err = document.getElementById("opProfileNameError");
+  const ok = document.getElementById("opProfileNameSuccess");
   err.classList.add("is-hidden"); ok.classList.add("is-hidden");
   try {
     await api.updateMe({
       first_name: document.getElementById("opProfileFirstName").value.trim(),
       last_name: document.getElementById("opProfileLastName").value.trim(),
-      email: document.getElementById("opProfileEmailInput").value.trim(),
     });
     currentUser = await api.me();
     loadOpProfile();
     ok.classList.remove("is-hidden");
   } catch (e2) {
     err.textContent = e2.message || "Saqlab bo'lmadi.";
+    err.classList.remove("is-hidden");
+  }
+});
+
+document.getElementById("opProfileEmailForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = document.getElementById("opProfileEmailError");
+  const ok = document.getElementById("opProfileEmailSuccess");
+  err.classList.add("is-hidden"); ok.classList.add("is-hidden");
+  const newEmail = document.getElementById("opProfileEmailInput").value.trim();
+  if (newEmail === currentUser.email) {
+    err.textContent = "Bu email allaqachon sizga tegishli — o'zgarish yo'q.";
+    err.classList.remove("is-hidden");
+    return;
+  }
+  try {
+    await api.updateMe({ email: newEmail });
+    currentUser = await api.me();
+    loadOpProfile();
+    ok.classList.remove("is-hidden");
+  } catch (e2) {
+    err.textContent = e2.message || "Emailni yangilab bo'lmadi.";
     err.classList.remove("is-hidden");
   }
 });
@@ -1017,14 +1038,9 @@ function renderAdUsersPage() {
     });
   });
   tbody.querySelectorAll("[data-editu]").forEach((b) => {
-    b.addEventListener("click", async () => {
+    b.addEventListener("click", () => {
       const u = adUsersFullList.find((x) => x.id == b.dataset.editu);
-      const firstName = prompt("Ism:", u.first_name || "");
-      if (firstName === null) return;
-      const lastName = prompt("Familiya:", u.last_name || "");
-      if (lastName === null) return;
-      try { await api.updateUserByAdmin(u.id, { first_name: firstName, last_name: lastName, email: u.email }); loadAdUsers(); }
-      catch (err) { showToast(err.message || "Saqlab bo'lmadi."); }
+      openUserForm(u);
     });
   });
   tbody.querySelectorAll("[data-delu]").forEach((b) => {
@@ -1032,12 +1048,48 @@ function renderAdUsersPage() {
       const ok = await showConfirm("Bu foydalanuvchini butunlay o'chirmoqchimisiz?", "Foydalanuvchini o'chirish");
       if (!ok) return;
       try { await api.deleteUser(b.dataset.delu); loadAdUsers(); }
-      catch (err) { showToast(err.message || "O'chirib bo'lmadi."); }
+      catch (err) {
+        const msg = (err.message || "").toLowerCase();
+        if (msg.includes("foreign key") || msg.includes("constraint") || msg.includes("call_history")) {
+          showToast("Bu foydalanuvchida qo'ng'iroqlar tarixi mavjud, shuning uchun o'chirib bo'lmaydi. Buning o'rniga uni \"Bloklangan\" holatiga o'tkazing.");
+        } else {
+          showToast(err.message || "O'chirib bo'lmadi.");
+        }
+      }
     });
   });
 
   renderPager(document.getElementById("adUsersPager"), adUsersPage, totalPages, (p) => { adUsersPage = p; renderAdUsersPage(); });
 }
+
+function openUserForm(u) {
+  document.getElementById("ufId").value = u.id;
+  document.getElementById("ufFirstName").value = u.first_name || "";
+  document.getElementById("ufLastName").value = u.last_name || "";
+  document.getElementById("ufEmail").value = u.email || "";
+  document.getElementById("userFormError").classList.add("is-hidden");
+  openModal("userFormModal");
+}
+
+document.getElementById("userFormForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = document.getElementById("userFormError");
+  err.classList.add("is-hidden");
+  const id = document.getElementById("ufId").value;
+  try {
+    await api.updateUserByAdmin(id, {
+      first_name: document.getElementById("ufFirstName").value.trim(),
+      last_name: document.getElementById("ufLastName").value.trim(),
+      email: document.getElementById("ufEmail").value.trim(),
+    });
+    closeModal("userFormModal");
+    showToast("Foydalanuvchi yangilandi.", "ok");
+    loadAdUsers();
+  } catch (e2) {
+    err.textContent = e2.message || "Saqlab bo'lmadi.";
+    err.classList.remove("is-hidden");
+  }
+});
 
 /* ---------- Admin: Call History ---------- */
 let adHistPhoneMap = {}; // "+998 90 123 45 67" -> phoneId
@@ -1076,12 +1128,23 @@ async function loadAdHistory() {
         <td>${adHistPage * AD_PAGE_SIZE + i + 1}</td><td>${fmtDate(h.call_date)}</td>
         <td class="phone-mono">${formatPhoneDisplay(h.phone_number)}</td><td>${escapeHtml(h.dispatcher || "-")}</td>
         <td>${badgeHtml(h.status)}</td><td>${h.duration ?? 0}s</td><td class="cell-truncate">${escapeHtml(h.description || "-")}</td>
-        <td><button class="btn-ghost btn-xs" data-histdetail="${h.id}">Batafsil</button></td>
+        <td><div class="row-actions">
+          <button class="btn-ghost btn-xs" data-histdetail="${h.id}">Batafsil</button>
+          <button class="icon-btn" data-delphone="${h.phone_id}" title="Raqamni o'chirish">🗑</button>
+        </div></td>
       </tr>
     `).join("") || `<tr><td colspan="8" class="muted">Tarix topilmadi.</td></tr>`;
 
     tbody.querySelectorAll("[data-histdetail]").forEach((b) => {
       b.addEventListener("click", () => openHistDetails(content.find((x) => x.id == b.dataset.histdetail)));
+    });
+    tbody.querySelectorAll("[data-delphone]").forEach((b) => {
+      b.addEventListener("click", async () => {
+        const ok = await showConfirm("Bu telefon raqamini butunlay o'chirmoqchimisiz?", "Raqamni o'chirish");
+        if (!ok) return;
+        try { await api.deletePhone(b.dataset.delphone); showToast("Raqam o'chirildi.", "ok"); loadAdHistory(); }
+        catch (err) { showToast(err.message || "O'chirib bo'lmadi."); }
+      });
     });
 
     renderPager(document.getElementById("adHistoryPager"), adHistPage, res.total_pages || 1, (p) => { adHistPage = p; loadAdHistory(); });
