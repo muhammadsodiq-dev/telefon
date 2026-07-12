@@ -221,6 +221,20 @@ tbody tr:hover{ background:rgba(255,255,255,.02); }
 .filters-row{ display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
 .filters-row:last-child{ margin-bottom:0; }
 
+.import-drop-zone{
+  border:2px dashed var(--border); border-radius:var(--radius-lg);
+  padding:34px 20px; text-align:center; cursor:pointer;
+  transition:all .15s ease; background:var(--bg-elev);
+}
+.import-drop-zone:hover, .import-drop-zone.drag-over{ border-color:var(--accent); background:var(--accent-bg); }
+.import-drop-icon{ font-size:28px; margin-bottom:8px; }
+.import-result{
+  margin-top:14px; padding:12px 14px; border-radius:var(--radius);
+  background:var(--surface-2); border:1px solid var(--border); font-size:13px;
+  display:flex; flex-direction:column; gap:6px;
+}
+.import-result .ir-row{ display:flex; justify-content:space-between; }
+
 .danger-zone-panel{ margin-top:16px; border-color:rgba(255,84,112,0.35); }
 .danger-zone-title{ font-size:14px; font-weight:600; color:var(--danger); margin-bottom:6px; }
 
