@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
 <body>
 
@@ -243,6 +245,31 @@
     <!-- ---------- CALL HISTORY (operator) ---------- -->
     <div id="opHistoryView" class="op-view is-hidden">
       <h2 class="view-title">Qo'ng'iroqlar tarixi</h2>
+
+      <div class="panel filters-panel">
+        <div class="filters-row">
+          <label class="field-inline"><span>Telefon raqami</span><input type="text" id="opHistPhoneSearch" placeholder="Qidirish..."></label>
+          <label class="field-inline"><span>Dan</span><input type="date" id="opHistFrom"></label>
+          <label class="field-inline"><span>Gacha</span><input type="date" id="opHistTo"></label>
+          <label class="field-inline"><span>Holat</span>
+            <select id="opHistStatus">
+              <option value="">Barchasi</option>
+              <option value="NEW">Yangi</option>
+              <option value="CONNECTED">Bog'landi</option>
+              <option value="NO_ANSWER">Ko'tarilmadi</option>
+              <option value="BUSY">Band</option>
+              <option value="CALLBACK_REQUIRED">Qayta aloqa</option>
+              <option value="WRONG_NUMBER">Noto'g'ri raqam</option>
+              <option value="NOT_INTERESTED">Qiziqmadi</option>
+              <option value="BLACKLISTED">Qora ro'yxatda</option>
+              <option value="FINISHED">Yakunlangan</option>
+            </select>
+          </label>
+          <button class="btn-secondary" id="opHistApplyBtn">Filtrlash</button>
+          <button class="btn-ghost" id="opHistResetBtn">Tozalash</button>
+        </div>
+      </div>
+
       <div class="panel table-panel">
         <div class="table-scroll">
           <table>
@@ -346,6 +373,18 @@
           <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M14 14L18 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
           <input type="text" id="adPhoneSearch" placeholder="Raqam qidirish...">
         </div>
+        <select id="adPhoneStatusFilter" class="select-compact">
+          <option value="">Barcha holatlar</option>
+          <option value="NEW">Yangi</option>
+          <option value="CONNECTED">Bog'landi</option>
+          <option value="NO_ANSWER">Ko'tarilmadi</option>
+          <option value="BUSY">Band</option>
+          <option value="CALLBACK_REQUIRED">Qayta aloqa</option>
+          <option value="WRONG_NUMBER">Noto'g'ri raqam</option>
+          <option value="NOT_INTERESTED">Qiziqmadi</option>
+          <option value="BLACKLISTED">Qora ro'yxatda</option>
+          <option value="FINISHED">Yakunlangan</option>
+        </select>
         <button class="btn-primary" id="adAddPhoneBtn">+ Raqam qo'shish</button>
       </div>
       <div class="panel table-panel">
@@ -371,7 +410,7 @@
       <div class="panel table-panel">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>#</th><th>To'liq ism</th><th>Email</th><th>Rol</th><th>Holat</th><th>Amallar</th></tr></thead>
+            <thead><tr><th>#</th><th>To'liq ism</th><th>Email</th><th>Rol</th><th>Holat</th><th>Yaratilgan</th><th>Amallar</th></tr></thead>
             <tbody id="adUsersBody"></tbody>
           </table>
         </div>
@@ -384,12 +423,18 @@
       <div class="panel filters-panel">
         <div class="filters-row">
           <label class="field-inline"><span>Telefon raqami</span>
-            <input type="text" id="adHistPhoneSearch" list="adHistPhoneDatalist" placeholder="Raqam tanlang yoki yozing" autocomplete="off">
-            <datalist id="adHistPhoneDatalist"></datalist>
+            <div class="combo" id="phoneCombo">
+              <input type="text" class="combo-input" id="adHistPhoneSearchInput" placeholder="Qidirish yoki tanlash..." autocomplete="off">
+              <input type="hidden" id="adHistPhoneSearch">
+              <div class="combo-list" id="adHistPhoneComboList"></div>
+            </div>
           </label>
           <label class="field-inline"><span>Dispetcher</span>
-            <input type="text" id="adHistDispatcherId" list="adHistDispatcherDatalist" placeholder="Ism bo'yicha tanlang" autocomplete="off">
-            <datalist id="adHistDispatcherDatalist"></datalist>
+            <div class="combo" id="dispatcherCombo">
+              <input type="text" class="combo-input" id="adHistDispatcherInput" placeholder="Qidirish yoki tanlash..." autocomplete="off">
+              <input type="hidden" id="adHistDispatcherId">
+              <div class="combo-list" id="adHistDispatcherComboList"></div>
+            </div>
           </label>
           <label class="field-inline"><span>Dan</span><input type="date" id="adHistFrom"></label>
           <label class="field-inline"><span>Gacha</span><input type="date" id="adHistTo"></label>
