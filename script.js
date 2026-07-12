@@ -3,26 +3,44 @@
    ========================================================================= */
 
 const API_BASE_URL = ""; // Vercel serverless proksi orqali (/api/[...path].js)
-const WS_URL = "http://178.104.182.81:8082/ws"; // <-- backend WebSocket manzilini shu yerga yozing, masalan: "wss://178.104.182.81:8082/ws"
+const WS_URL = "http://178.104.182.81:8082/ws"; // SockJS endpoint (production'da https/wss kerak bo'ladi)
 
-let ws = null;
+let stompClient = null;
 let phoneLockMap = {}; // phoneId -> {locked, operatorId, operatorName}
 
 function connectWebSocket() {
-  if (!WS_URL) return;
+  if (!WS_URL || typeof SockJS === "undefined" || typeof Stomp === "undefined") return;
   try {
-    ws = new WebSocket(WS_URL);
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.phoneId !== undefined) {
+    const socket = new SockJS(WS_URL);
+    stompClient = Stomp.over(socket);
+    stompClient.debug = () => {}; // konsolni kirlantirmaslik uchun
+
+    stompClient.connect({}, () => {
+      stompClient.subscribe("/topic/phones", (message) => {
+        try {
+          const data = JSON.parse(message.body);
+          if (data.phoneId === undefined) return;
+
           phoneLockMap[data.phoneId] = { locked: data.locked, operatorId: data.operatorId, operatorName: data.operatorName };
           refreshLockDisplays();
-        }
-      } catch (_) {}
-    };
-    ws.onclose = () => { setTimeout(connectWebSocket, 3000); };
-    ws.onerror = () => { try { ws.close(); } catch (_) {} };
+
+          // Agar bizning band qilgan raqamimiz boshqa tomondan (masalan admin) bo'shatilgan bo'lsa
+          if (!data.locked && myActivePhoneId === Number(data.phoneId)) {
+            myActivePhoneId = null;
+            loadOpMyActiveBanner();
+            if (!document.getElementById("opActiveView").classList.contains("is-hidden")) loadOpActive();
+          }
+          // Agar admin/boshqa operator kimgadir "take" qilib berilgan bo'lsa va bu aynan biz bo'lsak
+          if (data.locked && data.operatorId === (currentUser && currentUser.id)) {
+            myActivePhoneId = Number(data.phoneId);
+            loadOpMyActiveBanner();
+          }
+        } catch (_) {}
+      });
+    }, () => {
+      // Ulanish uzilsa 5 soniyadan keyin qayta urinamiz
+      setTimeout(connectWebSocket, 5000);
+    });
   } catch (_) {}
 }
 
@@ -317,6 +335,7 @@ async function afterLogin() {
 
   const role = (currentUser.role || "USER").toUpperCase();
   connectWebSocket();
+  startPollingFallback();
   if (role === "ADMIN" || role === "SUPER_USER") {
     show("adminApp");
     initAdminApp();
@@ -324,6 +343,18 @@ async function afterLogin() {
     show("operatorApp");
     initOperatorApp();
   }
+}
+
+let pollingInterval = null;
+function startPollingFallback() {
+  clearInterval(pollingInterval);
+  // WebSocket ishlamasa ham (masalan https/http muammosi), 15 soniyada bir marta
+  // "faol raqam" holatini API orqali qayta tekshirib turamiz.
+  pollingInterval = setInterval(() => {
+    if (!document.getElementById("operatorApp").classList.contains("is-hidden")) {
+      loadOpMyActiveBanner();
+    }
+  }, 15000);
 }
 
 function forceLogout() {
@@ -528,6 +559,15 @@ function initOperatorApp() {
   });
   document.getElementById("opStatusFilter").addEventListener("change", () => { opPage = 0; loadOpPhones(); });
 
+  document.getElementById("opHistApplyBtn").addEventListener("click", loadOpHistory);
+  document.getElementById("opHistResetBtn").addEventListener("click", () => {
+    document.getElementById("opHistPhoneSearch").value = "";
+    document.getElementById("opHistFrom").value = "";
+    document.getElementById("opHistTo").value = "";
+    document.getElementById("opHistStatus").value = "";
+    loadOpHistory();
+  });
+
   loadOpMyActiveBanner();
   loadOpPhones();
 }
@@ -604,7 +644,9 @@ async function doTake(id, phone) {
   try {
     const active = await api.myActive();
     if (active && active.id && Number(active.id) !== Number(id)) {
-      showToast(`Sizda hali faol raqam bor (${formatPhoneDisplay(active.phone_number)}). Avval uni yangilang yoki bo'shating.`);
+      myActivePhoneId = Number(active.id);
+      showToast(`Sizda hali faol raqam bor: ${formatPhoneDisplay(active.phone_number)}. Avval shu raqamni yangilang.`);
+      openUpdateModal(active);
       return;
     }
     if (active && active.id && Number(active.id) === Number(id)) {
@@ -694,8 +736,17 @@ async function loadOpHistory() {
   const tbody = document.getElementById("opHistoryBody");
   tbody.innerHTML = `<tr><td colspan="7" class="muted">Yuklanmoqda...</td></tr>`;
   try {
-    const res = await api.listCallHistory({ dispatcherId: currentUser.id, size: 50 });
-    const content = res.content || [];
+    const res = await api.listCallHistory({
+      dispatcherId: currentUser.id,
+      status: document.getElementById("opHistStatus").value,
+      fromDate: document.getElementById("opHistFrom").value,
+      toDate: document.getElementById("opHistTo").value,
+      size: 50,
+    });
+    let content = res.content || [];
+    const phoneQ = document.getElementById("opHistPhoneSearch").value.replace(/\D/g, "");
+    if (phoneQ) content = content.filter((h) => (h.phone_number || "").replace(/\D/g, "").includes(phoneQ));
+
     document.getElementById("opHistoryEmpty").classList.toggle("is-hidden", content.length !== 0);
     tbody.innerHTML = content.map((h, i) => `
       <tr>
@@ -789,6 +840,7 @@ function initAdminApp() {
     clearTimeout(adPhoneDebounce);
     adPhoneDebounce = setTimeout(() => { adPhonesPage = 0; loadAdPhones(); }, 350);
   });
+  document.getElementById("adPhoneStatusFilter").addEventListener("change", () => { adPhonesPage = 0; loadAdPhones(); });
   document.getElementById("adUserSearch").addEventListener("input", () => {
     clearTimeout(adUserDebounce);
     adUserDebounce = setTimeout(loadAdUsers, 350);
@@ -802,6 +854,8 @@ function initAdminApp() {
     document.getElementById("adHistStatus").value = "";
     document.getElementById("adHistPhoneSearch").value = "";
     document.getElementById("adHistDispatcherId").value = "";
+    document.getElementById("adHistPhoneSearchInput").value = "";
+    document.getElementById("adHistDispatcherInput").value = "";
     adHistPage = 0; loadAdHistory();
   });
   document.getElementById("adHistExportBtn").addEventListener("click", exportHistoryToExcel);
@@ -973,7 +1027,11 @@ function renderDonut(donutId, legendId, counts) {
 async function loadAdPhones() {
   const tbody = document.getElementById("adPhonesBody");
   try {
-    const res = await api.listPhones({ search: document.getElementById("adPhoneSearch").value.trim(), page: adPhonesPage, size: AD_PAGE_SIZE });
+    const res = await api.listPhones({
+      search: document.getElementById("adPhoneSearch").value.trim(),
+      status: document.getElementById("adPhoneStatusFilter").value,
+      page: adPhonesPage, size: AD_PAGE_SIZE,
+    });
     tbody.innerHTML = res.content.map((r, i) => `
       <tr data-lock-row="${r.id}">
         <td>${adPhonesPage * AD_PAGE_SIZE + i + 1}</td>
@@ -1071,14 +1129,14 @@ let adUsersFullList = [];
 
 async function loadAdUsers() {
   const tbody = document.getElementById("adUsersBody");
-  tbody.innerHTML = `<tr><td colspan="6" class="muted">Yuklanmoqda...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="7" class="muted">Yuklanmoqda...</td></tr>`;
   try {
     const res = await api.listUsers({ search: document.getElementById("adUserSearch").value.trim() });
     adUsersFullList = Array.isArray(res) ? res : (res.content || []);
     adUsersPage = 0;
     renderAdUsersPage();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" class="muted">${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="muted">${escapeHtml(err.message)}</td></tr>`;
   }
 }
 
@@ -1107,12 +1165,13 @@ function renderAdUsersPage() {
             <option value="BLOCKED" ${u.status === "BLOCKED" ? "selected" : ""}>Bloklangan</option>
           </select>
         </td>
+        <td>${fmtDate(u.created_at || u.createdAt)}</td>
         <td><div class="row-actions">
           <button class="icon-btn" data-editu="${u.id}" title="Tahrirlash">✎</button>
           <button class="icon-btn" data-delu="${u.id}" title="O'chirish">🗑</button>
         </div></td>
       </tr>
-    `).join("") || `<tr><td colspan="6" class="muted">Foydalanuvchi topilmadi.</td></tr>`;
+    `).join("") || `<tr><td colspan="7" class="muted">Foydalanuvchi topilmadi.</td></tr>`;
 
   tbody.querySelectorAll(".role-select").forEach((sel) => {
     sel.addEventListener("change", async () => {
@@ -1188,38 +1247,55 @@ document.getElementById("userFormForm").addEventListener("submit", async (e) => 
 let adHistPhoneMap = {}; // "+998 90 123 45 67" -> phoneId
 let adHistDispatcherMap = {}; // "Ism Familiya" -> userId
 
+function setupCombo(inputId, hiddenId, listId, items) {
+  const input = document.getElementById(inputId);
+  const hidden = document.getElementById(hiddenId);
+  const list = document.getElementById(listId);
+
+  function render(filterText) {
+    const q = (filterText || "").toLowerCase();
+    const filtered = items.filter((it) => it.label.toLowerCase().includes(q));
+    list.innerHTML = `<div class="combo-item empty" data-id="">— Barchasi —</div>` +
+      filtered.map((it) => `<div class="combo-item" data-id="${it.id}">${escapeHtml(it.label)}</div>`).join("");
+    list.classList.add("open");
+  }
+
+  input.addEventListener("focus", () => render(input.value));
+  input.addEventListener("input", () => { hidden.value = ""; render(input.value); });
+  input.addEventListener("blur", () => setTimeout(() => list.classList.remove("open"), 150));
+
+  list.addEventListener("mousedown", (e) => {
+    const item = e.target.closest(".combo-item");
+    if (!item) return;
+    hidden.value = item.dataset.id;
+    input.value = item.dataset.id ? item.textContent : "";
+    list.classList.remove("open");
+  });
+}
+
 async function loadAdHistPhoneOptions() {
   try {
     const res = await api.listPhones({ page: 0, size: 200 });
-    adHistPhoneMap = {};
-    const datalist = document.getElementById("adHistPhoneDatalist");
-    datalist.innerHTML = (res.content || []).map((p) => {
-      const label = formatPhoneDisplay(p.phone_number);
-      adHistPhoneMap[label] = p.id;
-      return `<option value="${label}">`;
-    }).join("");
+    const items = (res.content || []).map((p) => ({
+      id: p.id,
+      label: `${formatPhoneDisplay(p.phone_number)}${p.owner_name ? " — " + p.owner_name : ""}`,
+    }));
+    setupCombo("adHistPhoneSearchInput", "adHistPhoneSearch", "adHistPhoneComboList", items);
   } catch (_) {}
 
   try {
     const usersRes = await api.listUsers({});
     const usersArr = Array.isArray(usersRes) ? usersRes : (usersRes.content || []);
-    adHistDispatcherMap = {};
-    const dList = document.getElementById("adHistDispatcherDatalist");
-    dList.innerHTML = usersArr.map((u) => {
-      const label = getUserFullName(u);
-      adHistDispatcherMap[label] = u.id;
-      return `<option value="${label}">`;
-    }).join("");
+    const items = usersArr.map((u) => ({ id: u.id, label: getUserFullName(u) }));
+    setupCombo("adHistDispatcherInput", "adHistDispatcherId", "adHistDispatcherComboList", items);
   } catch (_) {}
 }
 
 async function exportHistoryToExcel() {
   showToast("Tayyorlanmoqda, biroz kuting...", "ok");
   try {
-    const phoneTyped = document.getElementById("adHistPhoneSearch").value.trim();
-    const phoneId = adHistPhoneMap[phoneTyped] || "";
-    const dispatcherTyped = document.getElementById("adHistDispatcherId").value.trim();
-    const dispatcherId = adHistDispatcherMap[dispatcherTyped] || "";
+    const phoneId = document.getElementById("adHistPhoneSearch").value;
+    const dispatcherId = document.getElementById("adHistDispatcherId").value;
     const baseParams = {
       status: document.getElementById("adHistStatus").value,
       fromDate: document.getElementById("adHistFrom").value,
@@ -1270,10 +1346,8 @@ async function loadAdHistory() {
   const tbody = document.getElementById("adHistoryBody");
   tbody.innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda...</td></tr>`;
   try {
-    const phoneTyped = document.getElementById("adHistPhoneSearch").value.trim();
-    const phoneId = adHistPhoneMap[phoneTyped] || "";
-    const dispatcherTyped = document.getElementById("adHistDispatcherId").value.trim();
-    const dispatcherId = adHistDispatcherMap[dispatcherTyped] || "";
+    const phoneId = document.getElementById("adHistPhoneSearch").value;
+    const dispatcherId = document.getElementById("adHistDispatcherId").value;
 
     const res = await api.listCallHistory({
       status: document.getElementById("adHistStatus").value,
