@@ -78,8 +78,9 @@ let myActivePhoneId = null;
 
 /* ============================== API qatlami ============================= */
 async function apiFetch(path, options = {}, retry = true) {
+  const isFormData = options.body instanceof FormData;
   const headers = Object.assign(
-    { "Content-Type": "application/json" },
+    isFormData ? {} : { "Content-Type": "application/json" },
     options.headers || {},
     accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
   );
@@ -137,15 +138,20 @@ const api = {
   listPhones: ({ search = "", status = "", page = 0, size = 10 } = {}) => {
     const q = new URLSearchParams();
     if (search) q.set("search", search);
-    if (status) q.set("status", status);
+    if (status) q.set("lastCallStatus", status);
     q.set("page", page); q.set("size", size);
     return apiFetch(`/api/phones?${q.toString()}`);
   },
   createPhone: (payload) => apiFetch("/api/phones", { method: "POST", body: JSON.stringify(payload) }),
   updatePhone: (id, payload) => apiFetch(`/api/phones/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   updateOperatorPhone: (id, status, body) => {
-    const q = new URLSearchParams({ status });
+    const q = new URLSearchParams({ lastCallStatus: status });
     return apiFetch(`/api/phones/${id}/operator?${q.toString()}`, { method: "PATCH", body: JSON.stringify(body) });
+  },
+  importPhones: (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiFetch("/api/phones/import", { method: "POST", body: formData });
   },
   takePhone: (id) => apiFetch(`/api/phones/${id}/take`, { method: "POST" }),
   unlockPhone: (id) => apiFetch(`/api/phones/unlock/${id}`, { method: "PATCH" }),
@@ -175,6 +181,16 @@ function formatPhoneDisplay(phoneNumber) {
   const d = normalizeDigits(phoneNumber);
   if (d.length !== 9) return phoneNumber || "-";
   return `+998 ${d.slice(0,2)} ${d.slice(2,5)} ${d.slice(5,7)} ${d.slice(7,9)}`;
+}
+function plainStatusText(status) {
+  const m = STATUS_META[status] || { label: status || "-" };
+  return escapeHtml(m.label);
+}
+function formatDuration(seconds) {
+  const s = Number(seconds) || 0;
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return `${m}:${String(rem).padStart(2, "0")} daq`;
 }
 function fmtDate(v) {
   if (!v) return "-";
@@ -545,7 +561,7 @@ async function loadOpPhones() {
         <td>${opPage * OP_PAGE_SIZE + i + 1}</td>
         <td class="phone-mono">${formatPhoneDisplay(r.phone_number)}</td>
         <td>${escapeHtml(r.owner_name || "-")}</td>
-        <td>${badgeHtml(r.status)}</td>
+        <td>${badgeHtml(r.last_call_status)}</td>
         <td class="lock-indicator">${lockCellHtml(r.id)}</td>
         <td>
           <div class="row-actions">
@@ -571,7 +587,8 @@ function openDetails(phone) {
   document.getElementById("detailsBody").innerHTML = `
     <div class="details-row"><span class="dr-label">Telefon raqami</span><span class="dr-value">${formatPhoneDisplay(phone.phone_number)}</span></div>
     <div class="details-row"><span class="dr-label">Ism-familiya</span><span class="dr-value">${escapeHtml(phone.owner_name || "-")}</span></div>
-    <div class="details-row"><span class="dr-label">Holat</span><span class="dr-value">${badgeHtml(phone.status)}</span></div>
+    <div class="details-row"><span class="dr-label">Manzil</span><span class="dr-value">${escapeHtml(phone.location || "-")}</span></div>
+    <div class="details-row"><span class="dr-label">Holat</span><span class="dr-value">${badgeHtml(phone.last_call_status)}</span></div>
     <div class="details-row"><span class="dr-label">Qo'shilgan sana</span><span class="dr-value">${fmtDate(phone.created_at)}</span></div>
   `;
   openModal("detailsModal");
@@ -613,7 +630,7 @@ async function doTake(id, phone) {
 function openUpdateModal(phone) {
   document.getElementById("uId").value = phone.id;
   document.getElementById("updatePhoneLabel").textContent = formatPhoneDisplay(phone.phone_number);
-  document.getElementById("uStatus").value = phone.status && STATUS_LIST.includes(phone.status) ? phone.status : "NEW";
+  document.getElementById("uStatus").value = phone.last_call_status && STATUS_LIST.includes(phone.last_call_status) ? phone.last_call_status : "NEW";
   document.getElementById("uDescription").value = "";
   document.getElementById("updateError").classList.add("is-hidden");
   openModal("updateModal");
@@ -654,7 +671,7 @@ async function loadOpActive() {
     }
     card.innerHTML = `
       <div class="ap-phone">${formatPhoneDisplay(r.phone_number)}</div>
-      <div class="ap-row"><span class="muted">Status</span>${badgeHtml(r.status)}</div>
+      <div class="ap-row"><span class="muted">Status</span>${badgeHtml(r.last_call_status)}</div>
       <div class="ap-row"><span class="muted">Owner Name</span><span>${escapeHtml(r.owner_name || "-")}</span></div>
       <div class="ap-row"><span class="muted">Created At</span><span>${fmtDate(r.created_at)}</span></div>
       <div class="ap-actions">
@@ -683,7 +700,7 @@ async function loadOpHistory() {
     tbody.innerHTML = content.map((h, i) => `
       <tr>
         <td>${i + 1}</td><td>${fmtDate(h.call_date)}</td><td class="phone-mono">${formatPhoneDisplay(h.phone_number)}</td>
-        <td>${badgeHtml(h.status)}</td><td>${h.duration ?? 0}s</td>
+        <td>${plainStatusText(h.status)}</td><td>${formatDuration(h.duration)}</td>
         <td class="cell-truncate">${escapeHtml(h.description || "-")}</td>
         <td><button class="btn-ghost btn-xs" data-histdetail="${h.id}">Batafsil</button></td>
       </tr>
@@ -787,6 +804,7 @@ function initAdminApp() {
     document.getElementById("adHistDispatcherId").value = "";
     adHistPage = 0; loadAdHistory();
   });
+  document.getElementById("adHistExportBtn").addEventListener("click", exportHistoryToExcel);
   document.getElementById("adDeleteHistBtn").addEventListener("click", async () => {
     const d = document.getElementById("adDeleteUpTo").value;
     if (!d) return showToast("Sana tanlang.");
@@ -805,19 +823,74 @@ function initAdminApp() {
     catch (e2) { err.textContent = e2.message || "Bo'shatib bo'lmadi."; err.classList.remove("is-hidden"); }
   });
 
-  document.getElementById("adImportBtn").addEventListener("click", async () => {
-    const err = document.getElementById("adImportError"), ok = document.getElementById("adImportSuccess");
-    err.classList.add("is-hidden"); ok.classList.add("is-hidden");
-    const phoneVal = document.getElementById("adImportPhone").value;
-    if (!validateUzPhone(phoneVal)) { err.textContent = "Noto'g'ri raqam formati."; err.classList.remove("is-hidden"); return; }
-    try {
-      await api.createPhone({ phone_number: `+998${normalizeDigits(phoneVal)}`, owner_name: document.getElementById("adImportName").value.trim() || undefined });
-      ok.classList.remove("is-hidden");
-      document.getElementById("adImportPhone").value = ""; document.getElementById("adImportName").value = "";
-    } catch (e2) { err.textContent = e2.message || "Qo'shib bo'lmadi."; err.classList.remove("is-hidden"); }
+  setupImportUI();
+  loadAdminDashboard();
+}
+
+function setupImportUI() {
+  const dropZone = document.getElementById("importDropZone");
+  const fileInput = document.getElementById("adImportFile");
+  const fileNameEl = document.getElementById("importFileName");
+  const importBtn = document.getElementById("adImportBtn");
+  const err = document.getElementById("adImportError");
+  const resultBox = document.getElementById("adImportResult");
+  let selectedFile = null;
+
+  function setFile(file) {
+    if (!file) return;
+    const okExt = /\.(xlsx|xls)$/i.test(file.name);
+    if (!okExt) {
+      err.textContent = "Faqat .xlsx yoki .xls fayl qabul qilinadi.";
+      err.classList.remove("is-hidden");
+      return;
+    }
+    err.classList.add("is-hidden");
+    resultBox.classList.add("is-hidden");
+    selectedFile = file;
+    fileNameEl.textContent = `Tanlangan fayl: ${file.name}`;
+    importBtn.disabled = false;
+  }
+
+  dropZone.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => setFile(fileInput.files[0]));
+
+  ["dragover", "dragenter"].forEach((evt) => {
+    dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+  });
+  ["dragleave", "drop"].forEach((evt) => {
+    dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.classList.remove("drag-over"); });
+  });
+  dropZone.addEventListener("drop", (e) => {
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
   });
 
-  loadAdminDashboard();
+  importBtn.addEventListener("click", async () => {
+    if (!selectedFile) return;
+    err.classList.add("is-hidden");
+    resultBox.classList.add("is-hidden");
+    importBtn.disabled = true;
+    importBtn.textContent = "Yuklanmoqda...";
+    try {
+      const res = await api.importPhones(selectedFile);
+      resultBox.innerHTML = `
+        <div class="ir-row"><span>Jami qatorlar</span><strong>${res.total ?? 0}</strong></div>
+        <div class="ir-row"><span style="color:var(--ok)">Saqlandi</span><strong style="color:var(--ok)">${res.saved ?? 0}</strong></div>
+        <div class="ir-row"><span style="color:var(--warn)">Dublikatlar</span><strong style="color:var(--warn)">${res.duplicates ?? 0}</strong></div>
+        <div class="ir-row"><span style="color:var(--danger)">Xato qatorlar</span><strong style="color:var(--danger)">${res.failed ?? 0}</strong></div>
+      `;
+      resultBox.classList.remove("is-hidden");
+      showToast("Import yakunlandi.", "ok");
+      selectedFile = null;
+      fileInput.value = "";
+      fileNameEl.textContent = "";
+    } catch (e2) {
+      err.textContent = e2.message || "Import qilib bo'lmadi.";
+      err.classList.remove("is-hidden");
+    } finally {
+      importBtn.disabled = !selectedFile;
+      importBtn.textContent = "Import qilish";
+    }
+  });
 }
 
 /* ---------- Admin Dashboard: stat + donut ---------- */
@@ -906,16 +979,21 @@ async function loadAdPhones() {
         <td>${adPhonesPage * AD_PAGE_SIZE + i + 1}</td>
         <td class="phone-mono">${formatPhoneDisplay(r.phone_number)}</td>
         <td>${escapeHtml(r.owner_name || "-")}</td>
-        <td>${badgeHtml(r.status)}</td>
+        <td>${badgeHtml(r.last_call_status)}</td>
         <td class="lock-indicator">${lockCellHtml(r.id)}</td>
         <td><div class="row-actions">
           <button class="btn-primary btn-xs" data-take="${r.id}">Band qilish</button>
+          <button class="btn-secondary btn-xs" data-forceunlock="${r.id}">Bo'shatish</button>
           <button class="icon-btn" data-edit="${r.id}" title="Tahrirlash">✎</button>
           <button class="icon-btn" data-del="${r.id}" title="O'chirish">🗑</button>
         </div></td>
       </tr>
     `).join("");
     tbody.querySelectorAll("[data-take]").forEach((b) => b.addEventListener("click", () => doTake(b.dataset.take, res.content.find(x => x.id == b.dataset.take))));
+    tbody.querySelectorAll("[data-forceunlock]").forEach((b) => b.addEventListener("click", async () => {
+      try { await api.unlockPhone(b.dataset.forceunlock); showToast("Raqam bo'shatildi.", "ok"); loadAdPhones(); }
+      catch (err) { showToast(err.message || "Bo'shatib bo'lmadi."); }
+    }));
     tbody.querySelectorAll("[data-edit]").forEach((b) => b.addEventListener("click", () => openPhoneForm(res.content.find(x => x.id == b.dataset.edit))));
     tbody.querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => deletePhoneConfirm(b.dataset.del)));
     renderPager(document.getElementById("adPhonesPager"), adPhonesPage, res.total_pages, (p) => { adPhonesPage = p; loadAdPhones(); });
@@ -929,6 +1007,7 @@ function openPhoneForm(phone) {
   document.getElementById("pfId").value = phone ? phone.id : "";
   document.getElementById("pfPhone").value = phone ? normalizeDigits(phone.phone_number).replace(/(\d{2})(\d{3})(\d{2})(\d{2})/, "$1 $2 $3 $4") : "";
   document.getElementById("pfName").value = phone ? (phone.owner_name || "") : "";
+  document.getElementById("pfLocation").value = phone ? (phone.location || "") : "";
   document.getElementById("pfDeleteBtn").classList.toggle("is-hidden", !phone);
   document.getElementById("phoneFormError").classList.add("is-hidden");
   document.getElementById("pfPhoneError").classList.add("is-hidden");
@@ -947,7 +1026,10 @@ document.getElementById("phoneFormForm").addEventListener("submit", async (e) =>
     return;
   }
   try {
-    const payload = { owner_name: document.getElementById("pfName").value.trim() || undefined };
+    const payload = {
+      owner_name: document.getElementById("pfName").value.trim() || undefined,
+      location: document.getElementById("pfLocation").value.trim() || undefined,
+    };
     if (id) {
       payload.phone_number = `+998${normalizeDigits(phoneVal)}`;
       await api.updatePhone(id, payload);
@@ -1062,11 +1144,13 @@ function renderAdUsersPage() {
   renderPager(document.getElementById("adUsersPager"), adUsersPage, totalPages, (p) => { adUsersPage = p; renderAdUsersPage(); });
 }
 
+let ufOriginalEmail = "";
 function openUserForm(u) {
   document.getElementById("ufId").value = u.id;
   document.getElementById("ufFirstName").value = u.first_name || "";
   document.getElementById("ufLastName").value = u.last_name || "";
   document.getElementById("ufEmail").value = u.email || "";
+  ufOriginalEmail = u.email || "";
   document.getElementById("userFormError").classList.add("is-hidden");
   openModal("userFormModal");
 }
@@ -1076,12 +1160,14 @@ document.getElementById("userFormForm").addEventListener("submit", async (e) => 
   const err = document.getElementById("userFormError");
   err.classList.add("is-hidden");
   const id = document.getElementById("ufId").value;
+  const newEmail = document.getElementById("ufEmail").value.trim();
+  const payload = {
+    first_name: document.getElementById("ufFirstName").value.trim(),
+    last_name: document.getElementById("ufLastName").value.trim(),
+  };
+  if (newEmail !== ufOriginalEmail) payload.email = newEmail;
   try {
-    await api.updateUserByAdmin(id, {
-      first_name: document.getElementById("ufFirstName").value.trim(),
-      last_name: document.getElementById("ufLastName").value.trim(),
-      email: document.getElementById("ufEmail").value.trim(),
-    });
+    await api.updateUserByAdmin(id, payload);
     closeModal("userFormModal");
     showToast("Foydalanuvchi yangilandi.", "ok");
     loadAdUsers();
@@ -1107,6 +1193,58 @@ async function loadAdHistPhoneOptions() {
   } catch (_) {}
 }
 
+async function exportHistoryToExcel() {
+  showToast("Tayyorlanmoqda, biroz kuting...", "ok");
+  try {
+    const phoneTyped = document.getElementById("adHistPhoneSearch").value.trim();
+    const phoneId = adHistPhoneMap[phoneTyped] || "";
+    const dispatcherId = document.getElementById("adHistDispatcherId").value.trim();
+    const baseParams = {
+      status: document.getElementById("adHistStatus").value,
+      fromDate: document.getElementById("adHistFrom").value,
+      toDate: document.getElementById("adHistTo").value,
+      phoneId, dispatcherId,
+      size: 200,
+    };
+
+    let all = [];
+    let page = 0;
+    let totalPages = 1;
+    do {
+      const res = await api.listCallHistory({ ...baseParams, page });
+      all = all.concat(res.content || []);
+      totalPages = res.total_pages || 1;
+      page++;
+    } while (page < totalPages && page < 50);
+
+    const headers = ["#", "Sana va vaqt", "Telefon raqami", "Dispetcher", "Holat", "Davomiyligi", "Izoh"];
+    const rows = all.map((h, i) => [
+      i + 1,
+      fmtDate(h.call_date),
+      formatPhoneDisplay(h.phone_number),
+      h.dispatcher || "-",
+      plainStatusText(h.status),
+      formatDuration(h.duration),
+      (h.description || "-").replace(/[\r\n]+/g, " "),
+    ]);
+
+    const csvEscape = (val) => `"${String(val).replace(/"/g, '""')}"`;
+    const csvContent = [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\r\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `qongiroqlar-tarixi-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`${all.length} ta yozuv yuklab olindi.`, "ok");
+  } catch (err) {
+    showToast(err.message || "Eksport qilib bo'lmadi.");
+  }
+}
+
 async function loadAdHistory() {
   const tbody = document.getElementById("adHistoryBody");
   tbody.innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda...</td></tr>`;
@@ -1127,7 +1265,7 @@ async function loadAdHistory() {
       <tr>
         <td>${adHistPage * AD_PAGE_SIZE + i + 1}</td><td>${fmtDate(h.call_date)}</td>
         <td class="phone-mono">${formatPhoneDisplay(h.phone_number)}</td><td>${escapeHtml(h.dispatcher || "-")}</td>
-        <td>${badgeHtml(h.status)}</td><td>${h.duration ?? 0}s</td><td class="cell-truncate">${escapeHtml(h.description || "-")}</td>
+        <td>${plainStatusText(h.status)}</td><td>${formatDuration(h.duration)}</td><td class="cell-truncate">${escapeHtml(h.description || "-")}</td>
         <td><div class="row-actions">
           <button class="btn-ghost btn-xs" data-histdetail="${h.id}">Batafsil</button>
           <button class="icon-btn" data-delphone="${h.phone_id}" title="Raqamni o'chirish">🗑</button>
@@ -1158,8 +1296,8 @@ function openHistDetails(h) {
   document.getElementById("histDetailsBody").innerHTML = `
     <div class="details-row"><span class="dr-label">Telefon raqami</span><span class="dr-value">${formatPhoneDisplay(h.phone_number)}</span></div>
     <div class="details-row"><span class="dr-label">Dispetcher</span><span class="dr-value">${escapeHtml(h.dispatcher || "-")}</span></div>
-    <div class="details-row"><span class="dr-label">Holat</span><span class="dr-value">${badgeHtml(h.status)}</span></div>
-    <div class="details-row"><span class="dr-label">Davomiyligi</span><span class="dr-value">${h.duration ?? 0}s</span></div>
+    <div class="details-row"><span class="dr-label">Holat</span><span class="dr-value">${plainStatusText(h.status)}</span></div>
+    <div class="details-row"><span class="dr-label">Davomiyligi</span><span class="dr-value">${formatDuration(h.duration)}</span></div>
     <div class="details-row"><span class="dr-label">Sana va vaqt</span><span class="dr-value">${fmtDate(h.call_date)}</span></div>
     <div class="details-row"><span class="dr-label">Izoh</span><span class="dr-value">${escapeHtml(h.description || "-")}</span></div>
   `;
