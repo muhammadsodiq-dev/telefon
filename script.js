@@ -3,7 +3,7 @@
    ========================================================================= */
 
 const API_BASE_URL = ""; // Vercel serverless proksi orqali (/api/[...path].js)
-const WS_URL = "http://178.104.182.81:8082/ws"; // SockJS endpoint (production'da https/wss kerak bo'ladi)
+const WS_URL = "https://call-system.duckdns.org/ws"; // SockJS endpoint (HTTPS)
 
 let stompClient = null;
 let phoneLockMap = {}; // phoneId -> {locked, operatorId, operatorName}
@@ -500,6 +500,10 @@ document.getElementById("opGoForgotBtn")?.addEventListener("click", () => {
   forceLogout();
   showAuthView("forgotView");
 });
+document.getElementById("adGoForgotBtn")?.addEventListener("click", () => {
+  forceLogout();
+  showAuthView("forgotView");
+});
 
 /* ============================== MODAL YORDAMCHILARI ============================= */
 function openModal(id) { document.getElementById(id).classList.add("open"); }
@@ -596,6 +600,7 @@ async function loadOpPhones() {
       page: opPage, size: OP_PAGE_SIZE,
     });
     document.getElementById("opEmptyState").classList.toggle("is-hidden", res.content.length !== 0);
+    (res.content || []).forEach((p) => { phoneLocationMap[p.id] = p.location || ""; });
     tbody.innerHTML = res.content.map((r, i) => `
       <tr data-lock-row="${r.id}">
         <td>${opPage * OP_PAGE_SIZE + i + 1}</td>
@@ -734,7 +739,7 @@ async function loadOpActive() {
 /* ---------- Call History (operator) ---------- */
 async function loadOpHistory() {
   const tbody = document.getElementById("opHistoryBody");
-  tbody.innerHTML = `<tr><td colspan="7" class="muted">Yuklanmoqda...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda...</td></tr>`;
   try {
     const res = await api.listCallHistory({
       dispatcherId: currentUser.id,
@@ -751,7 +756,8 @@ async function loadOpHistory() {
     tbody.innerHTML = content.map((h, i) => `
       <tr>
         <td>${i + 1}</td><td>${fmtDate(h.call_date)}</td><td class="phone-mono">${formatPhoneDisplay(h.phone_number)}</td>
-        <td>${plainStatusText(h.status)}</td><td>${formatDuration(h.duration)}</td>
+        <td>${escapeHtml(phoneLocationMap[h.phone_id] || "-")}</td>
+        <td>${badgeHtml(h.status)}</td><td>${formatDuration(h.duration)}</td>
         <td class="cell-truncate">${escapeHtml(h.description || "-")}</td>
         <td><button class="btn-ghost btn-xs" data-histdetail="${h.id}">Batafsil</button></td>
       </tr>
@@ -760,7 +766,7 @@ async function loadOpHistory() {
       b.addEventListener("click", () => openHistDetails(content.find((x) => x.id == b.dataset.histdetail)));
     });
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="muted">${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="muted">${escapeHtml(err.message)}</td></tr>`;
   }
 }
 
@@ -817,7 +823,7 @@ document.getElementById("opProfileEmailForm").addEventListener("submit", async (
 /* =========================================================================
    ADMIN APP
    ========================================================================= */
-const AD_VIEWS = ["adDashboardView", "adPhonesView", "adUsersView", "adHistoryView", "adUnlockView", "adImportView"];
+const AD_VIEWS = ["adDashboardView", "adPhonesView", "adUsersView", "adHistoryView", "adUnlockView", "adImportView", "adPasswordView"];
 let adPhonesPage = 0;
 const AD_PAGE_SIZE = 10;
 let adHistPage = 0;
@@ -1040,6 +1046,7 @@ async function loadAdPhones() {
         <td>${badgeHtml(r.last_call_status)}</td>
         <td class="lock-indicator">${lockCellHtml(r.id)}</td>
         <td><div class="row-actions">
+          <button class="btn-ghost btn-xs" data-showdetails="${r.id}">Batafsil</button>
           <button class="btn-primary btn-xs" data-take="${r.id}">Band qilish</button>
           <button class="btn-secondary btn-xs" data-forceunlock="${r.id}">Bo'shatish</button>
           <button class="icon-btn" data-edit="${r.id}" title="Tahrirlash">✎</button>
@@ -1047,6 +1054,7 @@ async function loadAdPhones() {
         </div></td>
       </tr>
     `).join("");
+    tbody.querySelectorAll("[data-showdetails]").forEach((b) => b.addEventListener("click", () => openDetails(res.content.find(x => x.id == b.dataset.showdetails))));
     tbody.querySelectorAll("[data-take]").forEach((b) => b.addEventListener("click", () => doTake(b.dataset.take, res.content.find(x => x.id == b.dataset.take))));
     tbody.querySelectorAll("[data-forceunlock]").forEach((b) => b.addEventListener("click", async () => {
       try { await api.unlockPhone(b.dataset.forceunlock); showToast("Raqam bo'shatildi.", "ok"); loadAdPhones(); }
@@ -1273,6 +1281,8 @@ function setupCombo(inputId, hiddenId, listId, items) {
   });
 }
 
+let phoneLocationMap = {}; // phoneId -> location
+
 async function loadAdHistPhoneOptions() {
   try {
     const res = await api.listPhones({ page: 0, size: 200 });
@@ -1280,6 +1290,7 @@ async function loadAdHistPhoneOptions() {
       id: p.id,
       label: `${formatPhoneDisplay(p.phone_number)}${p.owner_name ? " — " + p.owner_name : ""}`,
     }));
+    (res.content || []).forEach((p) => { phoneLocationMap[p.id] = p.location || ""; });
     setupCombo("adHistPhoneSearchInput", "adHistPhoneSearch", "adHistPhoneComboList", items);
   } catch (_) {}
 
@@ -1344,7 +1355,7 @@ async function exportHistoryToExcel() {
 
 async function loadAdHistory() {
   const tbody = document.getElementById("adHistoryBody");
-  tbody.innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="9" class="muted">Yuklanmoqda...</td></tr>`;
   try {
     const phoneId = document.getElementById("adHistPhoneSearch").value;
     const dispatcherId = document.getElementById("adHistDispatcherId").value;
@@ -1360,14 +1371,16 @@ async function loadAdHistory() {
     tbody.innerHTML = content.map((h, i) => `
       <tr>
         <td>${adHistPage * AD_PAGE_SIZE + i + 1}</td><td>${fmtDate(h.call_date)}</td>
-        <td class="phone-mono">${formatPhoneDisplay(h.phone_number)}</td><td>${escapeHtml(h.dispatcher || "-")}</td>
-        <td>${plainStatusText(h.status)}</td><td>${formatDuration(h.duration)}</td><td class="cell-truncate">${escapeHtml(h.description || "-")}</td>
+        <td class="phone-mono">${formatPhoneDisplay(h.phone_number)}</td>
+        <td>${escapeHtml(phoneLocationMap[h.phone_id] || "-")}</td>
+        <td>${escapeHtml(h.dispatcher || "-")}</td>
+        <td>${badgeHtml(h.status)}</td><td>${formatDuration(h.duration)}</td><td class="cell-truncate">${escapeHtml(h.description || "-")}</td>
         <td><div class="row-actions">
           <button class="btn-ghost btn-xs" data-histdetail="${h.id}">Batafsil</button>
           <button class="icon-btn" data-delphone="${h.phone_id}" title="Raqamni o'chirish">🗑</button>
         </div></td>
       </tr>
-    `).join("") || `<tr><td colspan="8" class="muted">Tarix topilmadi.</td></tr>`;
+    `).join("") || `<tr><td colspan="9" class="muted">Tarix topilmadi.</td></tr>`;
 
     tbody.querySelectorAll("[data-histdetail]").forEach((b) => {
       b.addEventListener("click", () => openHistDetails(content.find((x) => x.id == b.dataset.histdetail)));
@@ -1390,7 +1403,7 @@ async function loadAdHistory() {
 
     renderPager(document.getElementById("adHistoryPager"), adHistPage, res.total_pages || 1, (p) => { adHistPage = p; loadAdHistory(); });
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="8" class="muted">${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="muted">${escapeHtml(err.message)}</td></tr>`;
   }
 }
 
@@ -1399,7 +1412,8 @@ function openHistDetails(h) {
   document.getElementById("histDetailsBody").innerHTML = `
     <div class="details-row"><span class="dr-label">Telefon raqami</span><span class="dr-value">${formatPhoneDisplay(h.phone_number)}</span></div>
     <div class="details-row"><span class="dr-label">Dispetcher</span><span class="dr-value">${escapeHtml(h.dispatcher || "-")}</span></div>
-    <div class="details-row"><span class="dr-label">Holat</span><span class="dr-value">${plainStatusText(h.status)}</span></div>
+    <div class="details-row"><span class="dr-label">Manzil</span><span class="dr-value">${escapeHtml(phoneLocationMap[h.phone_id] || "-")}</span></div>
+    <div class="details-row"><span class="dr-label">Holat</span><span class="dr-value">${badgeHtml(h.status)}</span></div>
     <div class="details-row"><span class="dr-label">Davomiyligi</span><span class="dr-value">${formatDuration(h.duration)}</span></div>
     <div class="details-row"><span class="dr-label">Sana va vaqt</span><span class="dr-value">${fmtDate(h.call_date)}</span></div>
     <div class="details-row"><span class="dr-label">Izoh</span><span class="dr-value">${escapeHtml(h.description || "-")}</span></div>
