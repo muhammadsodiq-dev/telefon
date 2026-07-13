@@ -89,8 +89,8 @@ function userStatusBadge(status) {
 }
 
 /* ------------------------------ Holat ---------------------------------- */
-let accessToken = null;
-let refreshToken = null;
+let accessToken = localStorage.getItem("accessToken");
+let refreshToken = localStorage.getItem("refreshToken");
 let currentUser = null; // { id, first_name, last_name, email, role, status }
 let myActivePhoneId = null;
 
@@ -121,15 +121,26 @@ async function apiFetch(path, options = {}, retry = true) {
 async function tryRefreshToken() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
+
     if (!res.ok) return false;
+
     const data = await res.json();
+
     accessToken = data.access_token;
-    refreshToken = data.refresh_token || refreshToken;
-    return true;
-  } catch (_) { return false; }
+refreshToken = data.refresh_token || refreshToken;
+
+localStorage.setItem("accessToken", accessToken);
+localStorage.setItem("refreshToken", refreshToken);
+
+return true;
+
+  } catch (e) {
+    return false;
+  }
 }
 
 const api = {
@@ -369,14 +380,45 @@ function startPollingFallback() {
 }
 
 function forceLogout() {
-  accessToken = null; refreshToken = null; currentUser = null; myActivePhoneId = null;
-  hide("operatorApp"); hide("adminApp");
+  accessToken = null;
+  refreshToken = null;
+  currentUser = null;
+  myActivePhoneId = null;
+
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+
+  hide("operatorApp");
+  hide("adminApp");
+
   document.getElementById("authScreen").classList.remove("is-hidden");
   showAuthView("loginView");
   loginForm.reset();
 }
+
 document.getElementById("opLogoutBtn").addEventListener("click", forceLogout);
 document.getElementById("adLogoutBtn").addEventListener("click", forceLogout);
+window.addEventListener("load", async () => {
+  const savedAccess = localStorage.getItem("accessToken");
+  const savedRefresh = localStorage.getItem("refreshToken");
+
+  if (!savedAccess) return;
+
+  accessToken = savedAccess;
+  refreshToken = savedRefresh;
+
+  try {
+    await afterLogin();
+  } catch (err) {
+    const ok = await tryRefreshToken();
+
+    if (ok) {
+      await afterLogin();
+    } else {
+      forceLogout();
+    }
+  }
+});
 
 /* ============================== REGISTER ============================= */
 const registerForm = document.getElementById("registerForm");
@@ -1001,28 +1043,62 @@ async function loadAdminDashboard() {
     ]);
     const usersArr = Array.isArray(usersRes) ? usersRes : (usersRes.content || []);
 
-    grid.innerHTML = `
-      <div class="stat-card"><div class="stat-label">Jami raqamlar</div><div class="stat-value">${phoneStats.total ?? 0}</div></div>
-      <div class="stat-card purple"><div class="stat-label">Jami foydalanuvchilar</div><div class="stat-value">${usersArr.length}</div></div>
-      <div class="stat-card neutral"><div class="stat-label">Yangi</div><div class="stat-value">${phoneStats.new_phones ?? 0}</div></div>
-      <div class="stat-card ok"><div class="stat-label">Bog'landi</div><div class="stat-value">${phoneStats.connected ?? 0}</div></div>
-      <div class="stat-card warn"><div class="stat-label">Band</div><div class="stat-value">${phoneStats.busy ?? 0}</div></div>
-      <div class="stat-card warn"><div class="stat-label">Ko'tarilmadi</div><div class="stat-value">${phoneStats.no_answer ?? 0}</div></div>
-      <div class="stat-card purple"><div class="stat-label">Qayta aloqa</div><div class="stat-value">${phoneStats.callback_required ?? 0}</div></div>
-      <div class="stat-card danger"><div class="stat-label">Qora ro'yxatda</div><div class="stat-value">${phoneStats.blacklisted ?? 0}</div></div>
-    `;
+grid.innerHTML = `
+  <div class="stat-card">
+    <div class="stat-label">Jami raqamlar</div>
+    <div class="stat-value">${phoneStats.total ?? 0}</div>
+  </div>
 
-    const phoneCounts = {
-      NEW: phoneStats.new_phones ?? 0,
-      CONNECTED: phoneStats.connected ?? 0,
-      NO_ANSWER: phoneStats.no_answer ?? 0,
-      BUSY: phoneStats.busy ?? 0,
-      CALLBACK_REQUIRED: phoneStats.callback_required ?? 0,
-      WRONG_NUMBER: phoneStats.wrong_number ?? 0,
-      NOT_INTERESTED: phoneStats.not_interested ?? 0,
-      BLACKLISTED: phoneStats.blacklisted ?? 0,
-      FINISHED: phoneStats.finished ?? 0,
-    };
+  <div class="stat-card purple">
+    <div class="stat-label">Jami foydalanuvchilar</div>
+    <div class="stat-value">${usersArr.length}</div>
+  </div>
+
+  <div class="stat-card neutral">
+    <div class="stat-label">Yangi</div>
+    <div class="stat-value">${phoneStats.new_phones ?? 0}</div>
+  </div>
+
+  <div class="stat-card ok">
+    <div class="stat-label">Bog'landi</div>
+    <div class="stat-value">${phoneStats.connected ?? 0}</div>
+  </div>
+
+  <div class="stat-card warn">
+    <div class="stat-label">Band</div>
+    <div class="stat-value">${phoneStats.busy ?? 0}</div>
+  </div>
+
+  <div class="stat-card warn">
+    <div class="stat-label">Ko'tarilmadi</div>
+    <div class="stat-value">${phoneStats.no_answer ?? 0}</div>
+  </div>
+
+  <div class="stat-card purple">
+    <div class="stat-label">Qayta aloqa</div>
+    <div class="stat-value">${phoneStats.callback_required ?? 0}</div>
+  </div>
+
+  <div class="stat-card info">
+    <div class="stat-label">Noto'g'ri raqam</div>
+    <div class="stat-value">${phoneStats.wrong_number ?? 0}</div>
+  </div>
+
+  <div class="stat-card secondary">
+    <div class="stat-label">Qiziqmadi</div>
+    <div class="stat-value">${phoneStats.not_interested ?? 0}</div>
+  </div>
+
+  <div class="stat-card danger">
+    <div class="stat-label">Qora ro'yxatda</div>
+    <div class="stat-value">${phoneStats.blacklisted ?? 0}</div>
+  </div>
+
+  <div class="stat-card success">
+    <div class="stat-label">Yakunlangan</div>
+    <div class="stat-value">${phoneStats.finished ?? 0}</div>
+  </div>
+`;
     renderDonut("adPhoneDonut", "adPhoneLegend", phoneCounts);
 
     const callCounts = {
