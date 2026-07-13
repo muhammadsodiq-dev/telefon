@@ -273,7 +273,7 @@
       <div class="panel table-panel">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>#</th><th>Sana va vaqt</th><th>Raqam</th><th>Holat</th><th>Davomiyligi</th><th>Izoh</th><th>Amallar</th></tr></thead>
+            <thead><tr><th>#</th><th>Sana va vaqt</th><th>Raqam</th><th>Manzil</th><th>Holat</th><th>Davomiyligi</th><th>Izoh</th><th>Amallar</th></tr></thead>
             <tbody id="opHistoryBody"></tbody>
           </table>
         </div>
@@ -341,6 +341,7 @@
       <button class="nav-item" data-view="adHistory">🕓 Qo'ng'iroqlar tarixi</button>
       <button class="nav-item" data-view="adUnlock">🔓 Bandlikni bekor qilish</button>
       <button class="nav-item" data-view="adImport">📥 Raqam qo'shish</button>
+      <button class="nav-item" data-view="adPassword">🔒 Parolni almashtirish</button>
       <button class="nav-item nav-logout" id="adLogoutBtn">↩ Chiqish</button>
     </nav>
   </aside>
@@ -371,7 +372,7 @@
       <div class="topbar">
         <div class="search-wrap">
           <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M14 14L18 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-          <input type="text" id="adPhoneSearch" placeholder="Raqam qidirish...">
+          <input type="text" id="adPhoneSearch" placeholder="Raqam yoki shahar/manzil bo'yicha qidirish...">
         </div>
         <select id="adPhoneStatusFilter" class="select-compact">
           <option value="">Barcha holatlar</option>
@@ -455,7 +456,7 @@
       <div class="panel table-panel">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>#</th><th>Sana va vaqt</th><th>Raqam</th><th>Dispetcher</th><th>Holat</th><th>Davomiyligi</th><th>Izoh</th><th>Amallar</th></tr></thead>
+            <thead><tr><th>#</th><th>Sana va vaqt</th><th>Raqam</th><th>Manzil</th><th>Dispetcher</th><th>Holat</th><th>Davomiyligi</th><th>Izoh</th><th>Amallar</th></tr></thead>
             <tbody id="adHistoryBody"></tbody>
           </table>
         </div>
@@ -505,6 +506,15 @@
         <div id="adImportResult" class="import-result is-hidden"></div>
 
         <button class="btn-primary btn-full" id="adImportBtn" disabled style="margin-top:14px;">Import qilish</button>
+      </div>
+    </div>
+
+    <!-- ---------- ADMIN: PAROLNI ALMASHTIRISH ---------- -->
+    <div id="adPasswordView" class="op-view is-hidden">
+      <h2 class="view-title">Parolni almashtirish</h2>
+      <div class="panel profile-panel">
+        <p class="muted" style="margin-bottom:16px;">Parolni yangilash uchun "Parolni unutdingizmi" jarayonidan foydalaning — bu email orqali kod yuboradi.</p>
+        <button class="btn-secondary" id="adGoForgotBtn">Parolni tiklash jarayonini boshlash</button>
       </div>
     </div>
   </main>
