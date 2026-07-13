@@ -182,7 +182,10 @@ const api = {
     return apiFetch(`/api/call-history?${q.toString()}`);
   },
   deleteHistoryBeforeDate: (beforeDate) => apiFetch(`/api/call-history?beforeDate=${beforeDate}`, { method: "DELETE" }),
-};
+deleteCallHistory: (callHistoryId) =>
+    apiFetch(`/api/call-history/${callHistoryId}`, {
+        method: "DELETE",
+    }),
 
 /* ================================ Validatsiya ============================ */
 function normalizeDigits(raw) {
