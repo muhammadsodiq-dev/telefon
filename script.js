@@ -552,7 +552,7 @@ function initOperatorApp() {
       btn.classList.add("active");
       showOnly(OP_VIEWS, btn.dataset.view + "View");
       if (btn.dataset.view === "opActive") loadOpActive();
-      if (btn.dataset.view === "opHistory") loadOpHistory();
+      if (btn.dataset.view === "opHistory") { opHistPage = 0; loadOpHistory(); loadOpHistFilterOptions(); }
       if (btn.dataset.view === "opProfile") loadOpProfile();
     });
   });
@@ -563,13 +563,16 @@ function initOperatorApp() {
   });
   document.getElementById("opStatusFilter").addEventListener("change", () => { opPage = 0; loadOpPhones(); });
 
-  document.getElementById("opHistApplyBtn").addEventListener("click", loadOpHistory);
+  document.getElementById("opHistApplyBtn").addEventListener("click", () => { opHistPage = 0; loadOpHistory(); });
   document.getElementById("opHistResetBtn").addEventListener("click", () => {
     document.getElementById("opHistPhoneSearch").value = "";
+    document.getElementById("opHistPhoneSearchInput").value = "";
+    document.getElementById("opHistDispatcherId").value = "";
+    document.getElementById("opHistDispatcherInput").value = "";
     document.getElementById("opHistFrom").value = "";
     document.getElementById("opHistTo").value = "";
     document.getElementById("opHistStatus").value = "";
-    loadOpHistory();
+    opHistPage = 0; loadOpHistory();
   });
 
   loadOpMyActiveBanner();
@@ -737,25 +740,27 @@ async function loadOpActive() {
 }
 
 /* ---------- Call History (operator) ---------- */
+let opHistPage = 0;
+const OP_HIST_PAGE_SIZE = 15;
+
 async function loadOpHistory() {
   const tbody = document.getElementById("opHistoryBody");
   tbody.innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda...</td></tr>`;
   try {
     const res = await api.listCallHistory({
-      dispatcherId: currentUser.id,
+      phoneId: document.getElementById("opHistPhoneSearch").value,
+      dispatcherId: document.getElementById("opHistDispatcherId").value,
       status: document.getElementById("opHistStatus").value,
       fromDate: document.getElementById("opHistFrom").value,
       toDate: document.getElementById("opHistTo").value,
-      size: 50,
+      page: opHistPage, size: OP_HIST_PAGE_SIZE,
     });
-    let content = res.content || [];
-    const phoneQ = document.getElementById("opHistPhoneSearch").value.replace(/\D/g, "");
-    if (phoneQ) content = content.filter((h) => (h.phone_number || "").replace(/\D/g, "").includes(phoneQ));
+    const content = res.content || [];
 
     document.getElementById("opHistoryEmpty").classList.toggle("is-hidden", content.length !== 0);
     tbody.innerHTML = content.map((h, i) => `
       <tr>
-        <td>${i + 1}</td><td>${fmtDate(h.call_date)}</td><td class="phone-mono">${formatPhoneDisplay(h.phone_number)}</td>
+        <td>${opHistPage * OP_HIST_PAGE_SIZE + i + 1}</td><td>${fmtDate(h.call_date)}</td><td class="phone-mono">${formatPhoneDisplay(h.phone_number)}</td>
         <td>${escapeHtml(phoneLocationMap[h.phone_id] || "-")}</td>
         <td>${badgeHtml(h.status)}</td><td>${formatDuration(h.duration)}</td>
         <td class="cell-truncate">${escapeHtml(h.description || "-")}</td>
@@ -765,9 +770,29 @@ async function loadOpHistory() {
     tbody.querySelectorAll("[data-histdetail]").forEach((b) => {
       b.addEventListener("click", () => openHistDetails(content.find((x) => x.id == b.dataset.histdetail)));
     });
+    renderPager(document.getElementById("opHistoryPager"), opHistPage, res.total_pages || 1, (p) => { opHistPage = p; loadOpHistory(); });
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="8" class="muted">${escapeHtml(err.message)}</td></tr>`;
   }
+}
+
+async function loadOpHistFilterOptions() {
+  try {
+    const res = await api.listPhones({ page: 0, size: 200 });
+    (res.content || []).forEach((p) => { phoneLocationMap[p.id] = p.location || ""; });
+    const items = (res.content || []).map((p) => ({
+      id: p.id,
+      label: `${formatPhoneDisplay(p.phone_number)}${p.owner_name ? " — " + p.owner_name : ""}`,
+    }));
+    setupCombo("opHistPhoneSearchInput", "opHistPhoneSearch", "opHistPhoneComboList", items);
+  } catch (_) {}
+
+  try {
+    const usersRes = await api.listUsers({});
+    const usersArr = Array.isArray(usersRes) ? usersRes : (usersRes.content || []);
+    const items = usersArr.map((u) => ({ id: u.id, label: getUserFullName(u) }));
+    setupCombo("opHistDispatcherInput", "opHistDispatcherId", "opHistDispatcherComboList", items);
+  } catch (_) {}
 }
 
 /* ---------- Profile ---------- */
