@@ -9,7 +9,7 @@ export const config = {
   },
 };
 
-const BACKEND_BASE = "http://178.104.182.81:8082";
+const BACKEND_BASE = "https://call-system.duckdns.org";
 
 export default async function handler(req, res) {
   const path = Array.isArray(req.query.path) ? req.query.path.join("/") : "";
