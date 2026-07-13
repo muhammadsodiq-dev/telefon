@@ -248,7 +248,20 @@
 
       <div class="panel filters-panel">
         <div class="filters-row">
-          <label class="field-inline"><span>Telefon raqami</span><input type="text" id="opHistPhoneSearch" placeholder="Qidirish..."></label>
+          <label class="field-inline"><span>Telefon raqami</span>
+            <div class="combo" id="opPhoneCombo">
+              <input type="text" class="combo-input" id="opHistPhoneSearchInput" placeholder="Qidirish yoki tanlash..." autocomplete="off">
+              <input type="hidden" id="opHistPhoneSearch">
+              <div class="combo-list" id="opHistPhoneComboList"></div>
+            </div>
+          </label>
+          <label class="field-inline"><span>Dispetcher</span>
+            <div class="combo" id="opDispatcherCombo">
+              <input type="text" class="combo-input" id="opHistDispatcherInput" placeholder="Barchasi (qidirish uchun yozing)" autocomplete="off">
+              <input type="hidden" id="opHistDispatcherId">
+              <div class="combo-list" id="opHistDispatcherComboList"></div>
+            </div>
+          </label>
           <label class="field-inline"><span>Dan</span><input type="date" id="opHistFrom"></label>
           <label class="field-inline"><span>Gacha</span><input type="date" id="opHistTo"></label>
           <label class="field-inline"><span>Holat</span>
@@ -278,6 +291,7 @@
           </table>
         </div>
         <div id="opHistoryEmpty" class="empty-state is-hidden"><p>Tarix bo'sh.</p></div>
+        <div class="pager" id="opHistoryPager"></div>
       </div>
     </div>
 
@@ -490,8 +504,8 @@
       <h2 class="view-title">Raqamlarni Excel orqali import qilish</h2>
       <div class="panel" style="max-width:520px;">
         <p class="muted" style="margin-bottom:14px;">
-          .xlsx yoki .xls fayl yuklang (maksimal 500 qator). Fayldagi ustun nomlari aynan
-          <strong>"Phone number"</strong> va <strong>"Owner name"</strong> bo'lishi kerak.
+          .xlsx yoki .xls fayl yuklang (maksimal 50 000 qator). Fayldagi ustun nomlari aynan
+          <strong>"Phone Number"</strong>, <strong>"Owner Name"</strong> va <strong>"Location"</strong> bo'lishi kerak.
           Dublikat raqamlar avtomatik o'tkazib yuboriladi.
         </p>
 
