@@ -176,16 +176,24 @@ const api = {
   deletePhone: (id) => apiFetch(`/api/phones/${id}`, { method: "DELETE" }),
   myActive: () => apiFetch("/api/phones/my-active"),
 
-  listCallHistory: (params = {}) => {
+listCallHistory: (params = {}) => {
     const q = new URLSearchParams();
-    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== "") q.set(k, v); });
+    Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== "") q.set(k, v);
+    });
     return apiFetch(`/api/call-history?${q.toString()}`);
-  },
-  deleteHistoryBeforeDate: (beforeDate) => apiFetch(`/api/call-history?beforeDate=${beforeDate}`, { method: "DELETE" }),
+},
+
+deleteHistoryBeforeDate: (beforeDate) =>
+    apiFetch(`/api/call-history?beforeDate=${beforeDate}`, {
+        method: "DELETE",
+    }),
+
 deleteCallHistory: (callHistoryId) =>
     apiFetch(`/api/call-history/${callHistoryId}`, {
         method: "DELETE",
     }),
+};
 
 /* ================================ Validatsiya ============================ */
 function normalizeDigits(raw) {
@@ -1405,7 +1413,7 @@ async function loadAdHistory() {
         <td>${badgeHtml(h.status)}</td><td>${formatDuration(h.duration)}</td><td class="cell-truncate">${escapeHtml(h.description || "-")}</td>
         <td><div class="row-actions">
           <button class="btn-ghost btn-xs" data-histdetail="${h.id}">Batafsil</button>
-          <button class="icon-btn" data-delphone="${h.phone_id}" title="Raqamni o'chirish">🗑</button>
+          <button class="icon-btn" data-delhistory="${h.id}" title="Tarixni o'chirish">🗑</button>
         </div></td>
       </tr>
     `).join("") || `<tr><td colspan="9" class="muted">Tarix topilmadi.</td></tr>`;
@@ -1413,21 +1421,26 @@ async function loadAdHistory() {
     tbody.querySelectorAll("[data-histdetail]").forEach((b) => {
       b.addEventListener("click", () => openHistDetails(content.find((x) => x.id == b.dataset.histdetail)));
     });
-    tbody.querySelectorAll("[data-delphone]").forEach((b) => {
-      b.addEventListener("click", async () => {
-        const ok = await showConfirm("Bu telefon raqamini butunlay o'chirmoqchimisiz?", "Raqamni o'chirish");
-        if (!ok) return;
-        try { await api.deletePhone(b.dataset.delphone); showToast("Raqam o'chirildi.", "ok"); loadAdHistory(); }
-        catch (err) {
-          const msg = (err.message || "").toLowerCase();
-          if (msg.includes("call history") || msg.includes("foreign key") || msg.includes("constraint")) {
-            showToast("Bu raqamda qo'ng'iroqlar tarixi mavjud, shuning uchun o'chirib bo'lmaydi. Avval \"Qo'ng'iroqlar tarixi\"da shu raqam bo'yicha yozuvlarni tozalang (yoki backend jamoasidan cascade delete so'rang).");
-          } else {
-            showToast(err.message || "O'chirib bo'lmadi.");
-          }
-        }
-      });
-    });
+tbody.querySelectorAll("[data-delhistory]").forEach((b) => {
+  b.addEventListener("click", async () => {
+    const ok = await showConfirm(
+      "Ushbu qo'ng'iroqlar tarixini o'chirmoqchimisiz?",
+      "Tarixni o'chirish"
+    );
+
+    if (!ok) return;
+
+    try {
+      await api.deleteCallHistory(b.dataset.delhistory);
+
+      showToast("Qo'ng'iroqlar tarixi o'chirildi.", "ok");
+
+      loadAdHistory();
+    } catch (err) {
+      showToast(err.message || "O'chirib bo'lmadi.");
+    }
+  });
+});
 
     renderPager(document.getElementById("adHistoryPager"), adHistPage, res.total_pages || 1, (p) => { adHistPage = p; loadAdHistory(); });
   } catch (err) {
