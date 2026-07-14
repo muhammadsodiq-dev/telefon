@@ -69,12 +69,12 @@ const STATUS_META = {
   NEW: { label: "Yangi", color: "neutral" },
   CONNECTED: { label: "Bog'landi", color: "ok" },
   NO_ANSWER: { label: "Ko'tarilmadi", color: "warn" },
-  BUSY: { label: "Band", color: "warn" },
+  BUSY: { label: "Band", color: "amber" },
   CALLBACK_REQUIRED: { label: "Qayta aloqa", color: "purple" },
-  WRONG_NUMBER: { label: "Noto'g'ri raqam", color: "neutral" },
-  NOT_INTERESTED: { label: "Qiziqmadi", color: "neutral" },
+  WRONG_NUMBER: { label: "Noto'g'ri raqam", color: "cyan" },
+  NOT_INTERESTED: { label: "Qiziqmadi", color: "brown" },
   BLACKLISTED: { label: "Qora ro'yxatda", color: "danger" },
-  FINISHED: { label: "Yakunlangan", color: "ok" },
+  FINISHED: { label: "Yakunlangan", color: "lime" },
 };
 const STATUS_LIST = Object.keys(STATUS_META);
 
@@ -128,6 +128,8 @@ async function tryRefreshToken() {
     const data = await res.json();
     accessToken = data.access_token;
     refreshToken = data.refresh_token || refreshToken;
+    localStorage.setItem("cms_access_token", accessToken);
+    localStorage.setItem("cms_refresh_token", refreshToken);
     return true;
   } catch (_) { return false; }
 }
@@ -182,6 +184,7 @@ const api = {
     return apiFetch(`/api/call-history?${q.toString()}`);
   },
   deleteHistoryBeforeDate: (beforeDate) => apiFetch(`/api/call-history?beforeDate=${beforeDate}`, { method: "DELETE" }),
+  deleteCallHistory: (id) => apiFetch(`/api/call-history/${id}`, { method: "DELETE" }),
 };
 
 /* ================================ Validatsiya ============================ */
@@ -320,6 +323,8 @@ loginForm.addEventListener("submit", async (e) => {
     );
     accessToken = data.access_token;
     refreshToken = data.refresh_token;
+    localStorage.setItem("cms_access_token", accessToken);
+    localStorage.setItem("cms_refresh_token", refreshToken);
     await afterLogin();
   } catch (err) {
     loginError.textContent = err.message || "Login yoki parol noto'g'ri.";
@@ -359,6 +364,8 @@ function startPollingFallback() {
 
 function forceLogout() {
   accessToken = null; refreshToken = null; currentUser = null; myActivePhoneId = null;
+  localStorage.removeItem("cms_access_token");
+  localStorage.removeItem("cms_refresh_token");
   hide("operatorApp"); hide("adminApp");
   document.getElementById("authScreen").classList.remove("is-hidden");
   showAuthView("loginView");
@@ -366,6 +373,20 @@ function forceLogout() {
 }
 document.getElementById("opLogoutBtn").addEventListener("click", forceLogout);
 document.getElementById("adLogoutBtn").addEventListener("click", forceLogout);
+
+// Sahifa yangilanganda (F5) saqlangan token bo'lsa, avtomatik tiklaymiz
+(async function restoreSession() {
+  const savedAccess = localStorage.getItem("cms_access_token");
+  const savedRefresh = localStorage.getItem("cms_refresh_token");
+  if (!savedAccess) return;
+  accessToken = savedAccess;
+  refreshToken = savedRefresh;
+  try {
+    await afterLogin();
+  } catch (_) {
+    forceLogout();
+  }
+})();
 
 /* ============================== REGISTER ============================= */
 const registerForm = document.getElementById("registerForm");
@@ -995,10 +1016,13 @@ async function loadAdminDashboard() {
       <div class="stat-card purple"><div class="stat-label">Jami foydalanuvchilar</div><div class="stat-value">${usersArr.length}</div></div>
       <div class="stat-card neutral"><div class="stat-label">Yangi</div><div class="stat-value">${phoneStats.new_phones ?? 0}</div></div>
       <div class="stat-card ok"><div class="stat-label">Bog'landi</div><div class="stat-value">${phoneStats.connected ?? 0}</div></div>
-      <div class="stat-card warn"><div class="stat-label">Band</div><div class="stat-value">${phoneStats.busy ?? 0}</div></div>
+      <div class="stat-card amber"><div class="stat-label">Band</div><div class="stat-value">${phoneStats.busy ?? 0}</div></div>
       <div class="stat-card warn"><div class="stat-label">Ko'tarilmadi</div><div class="stat-value">${phoneStats.no_answer ?? 0}</div></div>
       <div class="stat-card purple"><div class="stat-label">Qayta aloqa</div><div class="stat-value">${phoneStats.callback_required ?? 0}</div></div>
+      <div class="stat-card cyan"><div class="stat-label">Noto'g'ri raqam</div><div class="stat-value">${phoneStats.wrong_number ?? 0}</div></div>
+      <div class="stat-card brown"><div class="stat-label">Qiziqmadi</div><div class="stat-value">${phoneStats.not_interested ?? 0}</div></div>
       <div class="stat-card danger"><div class="stat-label">Qora ro'yxatda</div><div class="stat-value">${phoneStats.blacklisted ?? 0}</div></div>
+      <div class="stat-card lime"><div class="stat-label">Yakunlangan</div><div class="stat-value">${phoneStats.finished ?? 0}</div></div>
     `;
 
     const phoneCounts = {
@@ -1030,7 +1054,11 @@ async function loadAdminDashboard() {
   }
 }
 
-const COLOR_HEX = { ok: "#35C88A", warn: "#FFB020", danger: "#FF5470", neutral: "#8891A6", accent: "#3DA9FC", purple: "#A78BFA" };
+const COLOR_HEX = {
+  ok: "#35C88A", warn: "#FFB020", danger: "#FF5470", neutral: "#8891A6",
+  accent: "#3DA9FC", purple: "#A78BFA", amber: "#D97706", cyan: "#22D3EE",
+  brown: "#B45309", lime: "#84CC16",
+};
 function renderDonut(donutId, legendId, counts) {
   const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
   let acc = 0;
@@ -1402,7 +1430,7 @@ async function loadAdHistory() {
         <td>${badgeHtml(h.status)}</td><td>${formatDuration(h.duration)}</td><td class="cell-truncate">${escapeHtml(h.description || "-")}</td>
         <td><div class="row-actions">
           <button class="btn-ghost btn-xs" data-histdetail="${h.id}">Batafsil</button>
-          <button class="icon-btn" data-delphone="${h.phone_id}" title="Raqamni o'chirish">🗑</button>
+          <button class="icon-btn" data-delhist="${h.id}" title="Bu yozuvni o'chirish">🗑</button>
         </div></td>
       </tr>
     `).join("") || `<tr><td colspan="9" class="muted">Tarix topilmadi.</td></tr>`;
@@ -1410,19 +1438,12 @@ async function loadAdHistory() {
     tbody.querySelectorAll("[data-histdetail]").forEach((b) => {
       b.addEventListener("click", () => openHistDetails(content.find((x) => x.id == b.dataset.histdetail)));
     });
-    tbody.querySelectorAll("[data-delphone]").forEach((b) => {
+    tbody.querySelectorAll("[data-delhist]").forEach((b) => {
       b.addEventListener("click", async () => {
-        const ok = await showConfirm("Bu telefon raqamini butunlay o'chirmoqchimisiz?", "Raqamni o'chirish");
+        const ok = await showConfirm("Bu qo'ng'iroq yozuvini butunlay o'chirmoqchimisiz?", "Yozuvni o'chirish");
         if (!ok) return;
-        try { await api.deletePhone(b.dataset.delphone); showToast("Raqam o'chirildi.", "ok"); loadAdHistory(); }
-        catch (err) {
-          const msg = (err.message || "").toLowerCase();
-          if (msg.includes("call history") || msg.includes("foreign key") || msg.includes("constraint")) {
-            showToast("Bu raqamda qo'ng'iroqlar tarixi mavjud, shuning uchun o'chirib bo'lmaydi. Avval \"Qo'ng'iroqlar tarixi\"da shu raqam bo'yicha yozuvlarni tozalang (yoki backend jamoasidan cascade delete so'rang).");
-          } else {
-            showToast(err.message || "O'chirib bo'lmadi.");
-          }
-        }
+        try { await api.deleteCallHistory(b.dataset.delhist); showToast("Yozuv o'chirildi.", "ok"); loadAdHistory(); }
+        catch (err) { showToast(err.message || "O'chirib bo'lmadi."); }
       });
     });
 
