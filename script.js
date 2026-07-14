@@ -128,8 +128,8 @@ async function tryRefreshToken() {
     const data = await res.json();
     accessToken = data.access_token;
     refreshToken = data.refresh_token || refreshToken;
-    localStorage.setItem("cms_access_token", accessToken);
-    localStorage.setItem("cms_refresh_token", refreshToken);
+    sessionStorage.setItem("cms_access_token", accessToken);
+    sessionStorage.setItem("cms_refresh_token", refreshToken);
     return true;
   } catch (_) { return false; }
 }
@@ -323,8 +323,8 @@ loginForm.addEventListener("submit", async (e) => {
     );
     accessToken = data.access_token;
     refreshToken = data.refresh_token;
-    localStorage.setItem("cms_access_token", accessToken);
-    localStorage.setItem("cms_refresh_token", refreshToken);
+    sessionStorage.setItem("cms_access_token", accessToken);
+    sessionStorage.setItem("cms_refresh_token", refreshToken);
     await afterLogin();
   } catch (err) {
     loginError.textContent = err.message || "Login yoki parol noto'g'ri.";
@@ -364,8 +364,8 @@ function startPollingFallback() {
 
 function forceLogout() {
   accessToken = null; refreshToken = null; currentUser = null; myActivePhoneId = null;
-  localStorage.removeItem("cms_access_token");
-  localStorage.removeItem("cms_refresh_token");
+  sessionStorage.removeItem("cms_access_token");
+  sessionStorage.removeItem("cms_refresh_token");
   hide("operatorApp"); hide("adminApp");
   document.getElementById("authScreen").classList.remove("is-hidden");
   showAuthView("loginView");
@@ -376,8 +376,8 @@ document.getElementById("adLogoutBtn").addEventListener("click", forceLogout);
 
 // Sahifa yangilanganda (F5) saqlangan token bo'lsa, avtomatik tiklaymiz
 (async function restoreSession() {
-  const savedAccess = localStorage.getItem("cms_access_token");
-  const savedRefresh = localStorage.getItem("cms_refresh_token");
+  const savedAccess = sessionStorage.getItem("cms_access_token");
+  const savedRefresh = sessionStorage.getItem("cms_refresh_token");
   if (!savedAccess) return;
   accessToken = savedAccess;
   refreshToken = savedRefresh;
