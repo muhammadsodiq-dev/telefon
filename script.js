@@ -213,6 +213,13 @@ function formatDuration(seconds) {
   const rem = s % 60;
   return `${m}:${String(rem).padStart(2, "0")} daq`;
 }
+// Backend "yyyy-MM-dd HH:mm" formatini kutadi (LocalDateTime). HTML <input type="date">
+// esa faqat "yyyy-MM-dd" beradi — shu sababli vaqtni qo'shib to'ldiramiz.
+function toBackendDateTime(dateStr, endOfDay) {
+  if (!dateStr) return "";
+  return `${dateStr} ${endOfDay ? "23:59" : "00:00"}`;
+}
+
 function fmtDate(v) {
   if (!v) return "-";
   const d = new Date(v);
@@ -772,8 +779,8 @@ async function loadOpHistory() {
       phoneId: document.getElementById("opHistPhoneSearch").value,
       dispatcherId: document.getElementById("opHistDispatcherId").value,
       status: document.getElementById("opHistStatus").value,
-      fromDate: document.getElementById("opHistFrom").value,
-      toDate: document.getElementById("opHistTo").value,
+      fromDate: toBackendDateTime(document.getElementById("opHistFrom").value, false),
+      toDate: toBackendDateTime(document.getElementById("opHistTo").value, true),
       page: opHistPage, size: OP_HIST_PAGE_SIZE,
     });
     const content = res.content || [];
@@ -1362,8 +1369,8 @@ async function exportHistoryToExcel() {
     const dispatcherId = document.getElementById("adHistDispatcherId").value;
     const baseParams = {
       status: document.getElementById("adHistStatus").value,
-      fromDate: document.getElementById("adHistFrom").value,
-      toDate: document.getElementById("adHistTo").value,
+      fromDate: toBackendDateTime(document.getElementById("adHistFrom").value, false),
+      toDate: toBackendDateTime(document.getElementById("adHistTo").value, true),
       phoneId, dispatcherId,
       size: 200,
     };
@@ -1415,8 +1422,8 @@ async function loadAdHistory() {
 
     const res = await api.listCallHistory({
       status: document.getElementById("adHistStatus").value,
-      fromDate: document.getElementById("adHistFrom").value,
-      toDate: document.getElementById("adHistTo").value,
+      fromDate: toBackendDateTime(document.getElementById("adHistFrom").value, false),
+      toDate: toBackendDateTime(document.getElementById("adHistTo").value, true),
       phoneId, dispatcherId,
       page: adHistPage, size: AD_PAGE_SIZE,
     });
